@@ -1,4 +1,5 @@
 """Rays and their properties"""
+from copy import deepcopy
 import numpy as np
 
 
@@ -35,4 +36,4 @@ class Ray:
 
     def vertices(self):
         """Return the direction history of the ray """
-        return self.__pos
+        return deepcopy(self.__pos)
