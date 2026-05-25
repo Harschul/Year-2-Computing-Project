@@ -35,5 +35,5 @@ class Ray:
         self.__direc.append(np.array(new_direc))
 
     def vertices(self):
-        """Return the direction history of the ray """
+        """Return the position history of the ray """
         return deepcopy(self.__pos)
