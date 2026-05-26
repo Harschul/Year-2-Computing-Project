@@ -29,10 +29,10 @@ class Ray:
         """Return the latest direction of the ray"""
         return self.__direc[-1].copy()
 
-    def append(self, new_pos, new_direc):
+    def append(self, pos, direc):
         """Add a new position and direction to the ray"""
-        self.__pos.append(np.array(new_pos))
-        self.__direc.append(np.array(new_direc))
+        self.__pos.append(np.array(pos))
+        self.__direc.append(np.array(direc))
 
     def vertices(self):
         """Return the position history of the ray """

@@ -1,5 +1,6 @@
 """Represents the optical system using optical elements such as refracting surfaces, output plane""" 
 import numpy as np
+from . import physics
 
 class OpticalElement:
     "Base class for all Optical elements"
@@ -20,6 +21,8 @@ class SphericalRefraction(OpticalElement):
         self.__curvature = curvature
         self.__n_1 = n_1
         self.__n_2 = n_2
+        self.__radius = 1 / curvature
+        self.__centre = np.array([0.0, 0.0, self.__z_0 + self.__radius])
 
     def z_0(self):
         """Returns a copy of z0"""
@@ -41,13 +44,15 @@ class SphericalRefraction(OpticalElement):
         """Returns a copy of the n_2 value"""
         return self.__n_2
 
+    def centre(self):
+        """Returns the centre"""
+        return self.__centre
+
     def intercept(self, ray):
         """Return the closest valid ray intercept with the spherical surface."""
         if self.curvature() == 0:
             return None
 
-        radius = 1 / self.curvature()
-        centre = np.array([0.0, 0.0, self.z_0() + radius])
         pos = ray.pos()
         direc = ray.direc()
         direc_norm = np.linalg.norm(direc)
@@ -55,10 +60,10 @@ class SphericalRefraction(OpticalElement):
         if direc_norm == 0:
             return None
 
-        r = pos - centre
+        r = pos - self.__centre
         k_hat = direc / direc_norm
         r_dot_k_hat = np.dot(r, k_hat)
-        discriminant = r_dot_k_hat**2 - (np.dot(r, r) - radius**2)
+        discriminant = r_dot_k_hat**2 - (np.dot(r, r) - self.__radius**2)
 
         if discriminant < 0:
             return None
@@ -87,3 +92,16 @@ class SphericalRefraction(OpticalElement):
             return intercepts[0]
 
         return intercepts[np.argmin(possible_l_vals)]
+
+    def propagate_ray(self, ray):
+        """Propoagates ray"""
+        new_position = self.intercept(ray)
+
+        if new_position is None:
+            return
+
+        direc = ray.direc()
+        normal = new_position - self.centre()
+        new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
+
+        return ray.append(new_position, new_direc)
