@@ -3,7 +3,13 @@ from operator import itemgetter
 
 import matplotlib.pyplot as plt
 
-from raytracer._utils.decorators import SaveOutput
+from _utils.decorators import SaveOutput
+
+from rays import Ray
+
+from physics import refract
+
+from elements import SphericalRefraction
 
 
 def task8():
@@ -14,6 +20,23 @@ def task8():
     finds the correct intercept and correctly refracts a ray. Don't forget
     to check that the correct values are appended to your Ray object.
     """
+    pos = [0, 0, 0]
+    direc = [1, 1, 1]
+    ray = Ray(pos, direc)
+    sr = SphericalRefraction(
+        z_0 = 10,
+        aperture = 5,
+        curvature = 5,
+        n_1 = 1,
+        n_2 = 1.5,
+    )
+
+    intercept = sr.intercept(ray)
+    sr.propagate_ray(ray)
+    print(intercept, ray.vertices(), ray.direc())
+
+
+
 
 
 @SaveOutput("task10")

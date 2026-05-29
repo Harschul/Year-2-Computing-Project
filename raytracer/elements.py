@@ -1,6 +1,6 @@
 """Represents the optical system using optical elements such as refracting surfaces, output plane""" 
 import numpy as np
-from . import physics
+from raytracer import physics
 
 class OpticalElement:
     "Base class for all Optical elements"
