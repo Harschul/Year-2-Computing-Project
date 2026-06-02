@@ -55,13 +55,9 @@ class SphericalRefraction(OpticalElement):
 
         pos = ray.pos()
         direc = ray.direc()
-        direc_norm = np.linalg.norm(direc)
-
-        if direc_norm == 0:
-            return None
 
         r = pos - self.__centre
-        k_hat = direc / direc_norm
+        k_hat = direc
         r_dot_k_hat = np.dot(r, k_hat)
         discriminant = r_dot_k_hat**2 - (np.dot(r, r) - self.__radius**2)
 
@@ -105,3 +101,35 @@ class SphericalRefraction(OpticalElement):
         new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
 
         return ray.append(new_position, new_direc)
+
+
+class OutputPlane(OpticalElement):
+    """Plane"""
+    def __init__(self, z_0):
+        """Create Plane"""
+        self.__z_0 = z_0
+
+    def z_0(self):
+        """Return the z_0"""
+        return self.__z_0
+
+    def intercept(self, ray):
+        """Intercept"""
+        pos = ray.pos()
+        direc = ray.direc()
+        z_distance = self.__z_0 - pos[2]
+        z_direction = direc[2]
+        number_vectors = z_distance / z_direction
+
+        if z_direction == 0:
+            return None
+        if number_vectors <= 0:
+            return None
+        intercept = pos + direc * number_vectors
+
+        return intercept
+
+    def propagate_ray(self, ray):
+        end_position = self.intercept(ray)
+        direc = [0, 0, 1]
+        ray.append(end_position, direc)

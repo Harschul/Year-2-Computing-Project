@@ -1,16 +1,11 @@
 """Analysis module."""
+
 from operator import itemgetter
-
 import matplotlib.pyplot as plt
-
-from _utils.decorators import SaveOutput
-
-from rays import Ray
-
-from physics import refract
-
-from elements import SphericalRefraction
-
+import numpy as np
+from raytracer._utils.decorators import SaveOutput
+from raytracer.rays import Ray
+from raytracer.elements import SphericalRefraction, OutputPlane
 
 def task8():
     """
@@ -20,23 +15,28 @@ def task8():
     finds the correct intercept and correctly refracts a ray. Don't forget
     to check that the correct values are appended to your Ray object.
     """
-    pos = [0, 0, 0]
-    direc = [1, 1, 1]
-    ray = Ray(pos, direc)
-    sr = SphericalRefraction(
-        z_0 = 10,
-        aperture = 5,
-        curvature = 5,
-        n_1 = 1,
-        n_2 = 1.5,
-    )
+    positions = [[0, 0, 1], [0, 1, 1]]
+    directions = [[0, 1, 1], [0, 1, 1]]
 
-    intercept = sr.intercept(ray)
-    sr.propagate_ray(ray)
-    print(intercept, ray.vertices(), ray.direc())
+    if len(positions) != len(directions):
+        raise RuntimeError("Please ensure a position and direction is defined for each ray")
 
+    for pos, direc in zip(positions, directions):
+        ray = Ray(pos, direc)
 
+        sr = SphericalRefraction(
+            z_0=10,
+            aperture=50,
+            curvature=0.01,
+            n_1=1,
+            n_2=1.5,
+        )
 
+        intercept = sr.intercept(ray)
+        while intercept is not None:
+            #print(intercept)
+            sr.propagate_ray(ray)
+            intercept = sr.intercept(ray)
 
 
 @SaveOutput("task10")
@@ -52,7 +52,55 @@ def task10():
     Returns:
         Figure: the ray path plot.
     """
-    return
+
+    positions = np.array([
+        [0, 4, 0],
+        [0, 1, 0],
+        [0, 0.2, 0],
+        [0, 0, 0],
+        [0, -0.2, 0],
+        [0, -1, 0],
+        [0, -4, 0],
+    ])
+    directions = np.array([
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+    ])
+
+    if len(positions) != len(directions):
+        raise RuntimeError("Please ensure a position and direction is defined for each ray")
+
+    sr = SphericalRefraction(
+         z_0=100,
+         aperture=34,
+         curvature=0.03,
+         n_1=1,
+         n_2=1.5,
+        )
+
+    op = OutputPlane(250)
+
+    fig = plt.figure()
+    plt.xlabel("z (mm)")
+    plt.ylabel("y (mm)")
+
+    for pos, direc in zip(positions, directions):
+        ray = Ray(pos, direc)
+        intercept = sr.intercept(ray)
+        print(intercept)
+        sr.propagate_ray(ray)
+        op.propagate_ray(ray)
+        z_values = np.array(ray.vertices())[:, 2]
+        y_values = np.array(ray.vertices())[:, 1]
+        plt.plot(z_values, y_values)
+
+    return fig
+
 
 
 @SaveOutput("task11", plot_output_indices=itemgetter(0))
@@ -235,9 +283,9 @@ if __name__ == "__main__":
 
     # Run task 8 function
     task8()
-
     # Run task 10 function
-    # FIG10 = task10()
+    FIG10 = task10()
+
 
     # Run task 11 function
     # FIG11, FOCAL_POINT = task11()
@@ -268,5 +316,6 @@ if __name__ == "__main__":
 
     # Run task 20 function
     # FIG20 = task20()
-
     plt.show()
+
+    

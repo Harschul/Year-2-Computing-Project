@@ -34,6 +34,8 @@ def refract(direc, normal, n_1, n_2):
 
     tangent = direc_hat - np.dot(direc_hat, normal_hat) * normal_hat
     tangent_norm = np.linalg.norm(tangent)
+    if tangent_norm == 0:
+        return direc_hat
     tangent_hat = tangent / tangent_norm
 
     basis_2d = np.column_stack((tangent_hat, normal_hat))
