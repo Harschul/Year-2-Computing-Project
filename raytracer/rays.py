@@ -1,16 +1,16 @@
 """Rays and their properties"""
 
 import numpy as np
+import matplotlib.pyplot as plt
+from raytracer.genpolar import rtrings
 
 class Ray:
     """Ray object"""
-
     def __init__(self, pos = None, direc = None):
         """
         Initialize and creates a ray object which has a origin position
         and a direction. 
         """
-
         if pos is None:
             pos = np.array([0, 0, 0], dtype = float)
 
@@ -36,7 +36,6 @@ class Ray:
 
     def dimension_check(self, position, direction):
         """Checks dimensions of input arrays"""
-
         if len(direction) < 3:
             raise TypeError("The direction inserted is less than 3D")
         if len(direction) > 3:
@@ -62,5 +61,68 @@ class Ray:
         self.__direc = np.array(direc)
 
     def vertices(self):
-        """Return the position history of the ray """
+        """Return the position history of the ray"""
         return self.__pos
+
+class RayBundle:
+    """Generates a bundle of Rays"""
+    def __init__(self, rmax = 5, nrings = 5, multi = 6):
+        """Initializes a ray bundle"""
+        self.__positions_3d = np.array(list(rtrings(rmax, nrings, multi)))
+        self.rays = list(self.ray_bundle(self.__positions_3d))
+
+    def ray_bundle(self, positions):
+        """Bundles rays travelling in one direction"""
+        direc = [0, 0, 1]
+        for i in positions:
+            ray = Ray(i, direc)
+            yield ray
+
+    def propagate_bundle(self, elements):
+        """Propogates all rays through an optical element"""
+        for element in elements:
+            for ray in self.rays:
+                element.propagate_ray(ray)
+
+    def track_plot(self):
+        """Plots the Rays in 3D"""
+        fig = plt.figure()
+        ax = fig.add_subplot(projection = "3d")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+
+        for ray in self.rays:
+            vertices = np.array(ray.vertices())
+            z_values = vertices[:, 2]
+            y_values = vertices[:, 1]
+            x_values = vertices[:, 0]
+            ax.plot(x_values, y_values, z_values)
+
+        return fig
+
+    def rms(self):
+        """Calculates the RMS spread from the optical axis"""
+        x_y_vertices = []
+        for ray in self.rays:
+            x_y_vertex = ray.pos()[:2]
+            x_y_vertices.append(x_y_vertex)
+        x_y_vertices = np.array(x_y_vertices)
+        magnitude_squared = np.sum(x_y_vertices ** 2, axis = 1)
+        rms = np.sqrt(np.mean(magnitude_squared))
+        return rms
+
+    def spot_plot(self):
+        """Shows the intersection between the rays and an arbitrary plane"""
+        x_y_vertices = []
+        for ray in self.rays:
+            x_y_vertex = ray.pos()[:2]
+            x_y_vertices.append(x_y_vertex)
+        x_y_vertices = np.array(x_y_vertices)
+        x_position = x_y_vertices[:, 0]
+        y_position = x_y_vertices[:, 1]
+        fig = plt.figure()
+        plt.scatter(x_position, y_position)
+        plt.xlabel("x")
+        plt.ylabel("y")
+        return fig

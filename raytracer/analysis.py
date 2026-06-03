@@ -4,7 +4,7 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
 from raytracer._utils.decorators import SaveOutput
-from raytracer.rays import Ray
+from raytracer.rays import Ray, RayBundle
 from raytracer.elements import SphericalRefraction, OutputPlane
 
 def task8():
@@ -117,7 +117,48 @@ def task11():
     Returns:
         tuple[Figure, float]: the ray path plot and the focal point
     """
-    return
+
+    positions = np.array([
+        [0.1, 0.1, 0],
+        [0, 0, 0],
+        [-0.1, -0.1, 0],
+    ])
+    directions = np.array([
+        [0, 0, 1],
+        [0, 0, 1],
+        [0, 0, 1],
+    ])
+
+    if len(positions) != len(directions):
+        raise RuntimeError("Please ensure a position and direction is defined for each ray")
+
+    sr = SphericalRefraction(
+         z_0=100,
+         aperture=34,
+         curvature=0.03,
+         n_1=1,
+         n_2=1.5,
+        )
+
+    focal_point = sr.focal_point()
+    op = OutputPlane(focal_point)
+
+    fig = plt.figure()
+    plt.xlabel("z (mm)")
+    plt.ylabel("y (mm)")
+
+    for pos, direc in zip(positions, directions):
+        ray = Ray(pos, direc)
+        intercept = sr.intercept(ray)
+        print(intercept)
+        sr.propagate_ray(ray)
+        op.propagate_ray(ray)
+        z_values = np.array(ray.vertices())[:, 2]
+        y_values = np.array(ray.vertices())[:, 1]
+        plt.plot(z_values, y_values)
+
+    return fig, focal_point
+
 
 
 @SaveOutput("task12")
@@ -132,7 +173,21 @@ def task12():
     Returns:
         Figure: the track plot.
     """
-    return
+    bundle = RayBundle()
+    sr = SphericalRefraction(
+         z_0=10,
+         aperture=34,
+         curvature=0.03,
+         n_1=1,
+         n_2=2,
+        )
+
+    focal_point = sr.focal_point()
+    op = OutputPlane(focal_point)
+    elements = [sr, op]
+    bundle.propagate_bundle(elements)
+    plot = bundle.track_plot()
+    return plot
 
 
 @SaveOutput("task13", plot_output_indices=itemgetter(0))
@@ -149,7 +204,20 @@ def task13():
     Returns:
         tuple[Figure, float]: the spot plot and rms
     """
-    return
+    bundle = RayBundle()
+    sr = SphericalRefraction(
+         z_0=100,
+         aperture=34,
+         curvature=0.03,
+         n_1=1,
+         n_2=1.5,
+        )
+    op = OutputPlane(200)
+    elements = [sr, op]
+    bundle.propagate_bundle(elements)
+    plot = bundle.spot_plot()
+    rms = bundle.rms()
+    return plot, rms
 
 
 @SaveOutput("task14", plot_output_indices=itemgetter(0))
@@ -287,14 +355,14 @@ if __name__ == "__main__":
     FIG10 = task10()
 
 
-    # Run task 11 function
-    # FIG11, FOCAL_POINT = task11()
+    #Run task 11 function
+    FIG11, FOCAL_POINT = task11()
 
     # Run task 12 function
-    # FIG12 = task12()
+    FIG12 = task12()
 
     # Run task 13 function
-    # FIG13, TASK13_RMS = task13()
+    FIG13, TASK13_RMS = task13()
 
     # Run task 14 function
     # FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
@@ -316,6 +384,3 @@ if __name__ == "__main__":
 
     # Run task 20 function
     # FIG20 = task20()
-    plt.show()
-
-    

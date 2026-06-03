@@ -11,7 +11,6 @@ def angle(a, b):
 
 def refract(direc, normal, n_1, n_2):
     """Calculate the new refracted ray direction"""
-
     direc = np.array(direc)
     normal = np.array(normal)
 

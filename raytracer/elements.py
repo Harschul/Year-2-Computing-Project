@@ -1,6 +1,8 @@
 """Represents the optical system using optical elements such as refracting surfaces, output plane""" 
+
 import numpy as np
 from raytracer import physics
+from raytracer.rays import Ray
 
 class OpticalElement:
     "Base class for all Optical elements"
@@ -101,6 +103,28 @@ class SphericalRefraction(OpticalElement):
         new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
 
         return ray.append(new_position, new_direc)
+
+    def focal_point(self):
+        """Calculates the paraxial focus of this object"""
+        ys = [0.01, 0.02, 0.05, 0.1]
+        z_crossings = []
+        for i in ys:
+            paraxial_pos = [0, i, 1]
+            paraxial_direc = [0, 0, 1]
+            ray = Ray(paraxial_pos, paraxial_direc)
+            self.propagate_ray(ray)
+            y_direction = ray.direc()[1]
+            if y_direction == 0:
+                continue
+            y_position = ray.pos()[1]
+            number_of_vectors = -y_position / y_direction
+            if number_of_vectors <= 0:
+                continue
+            crossing = ray.pos()[2] + number_of_vectors * ray.direc()[2]
+            z_crossings.append(crossing)
+
+        return np.mean(z_crossings)
+
 
 
 class OutputPlane(OpticalElement):
