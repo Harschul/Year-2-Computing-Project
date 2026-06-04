@@ -6,6 +6,7 @@ import numpy as np
 from raytracer._utils.decorators import SaveOutput
 from raytracer.rays import Ray, RayBundle
 from raytracer.elements import SphericalRefraction, OutputPlane
+from raytracer.lenses import PlanoConvex
 
 def task8():
     """
@@ -212,14 +213,16 @@ def task13():
          n_1=1,
          n_2=1.5,
         )
-    op = OutputPlane(200)
+
+    focal_point = np.round(sr.focal_point(), 1)
+    op = OutputPlane(focal_point)
     elements = [sr, op]
     bundle.propagate_bundle(elements)
     plot = bundle.spot_plot()
     rms = bundle.rms()
     return plot, rms
 
-
+    
 @SaveOutput("task14", plot_output_indices=itemgetter(0))
 def task14():
     """
@@ -235,7 +238,47 @@ def task14():
     Returns:
         tuple[Figure, float, float]: the plot, the simulation RMS value, the diffraction scale.
     """
-    return
+    sr = SphericalRefraction()
+    focal_point = np.round(sr.focal_point(), 1) 
+    focal_length = focal_point - sr.z_0()
+    wavelength = 588e-6
+    op = OutputPlane(focal_point)
+    elements = [sr, op]
+    radii = np.linspace(0.1, 10, 100)
+    rms_list = []
+    diffraction_scale_list = []
+
+    def scale(wavelength, focal_length, radius): 
+        """Calulates the diffraction scale"""
+        big_d = radius * 2
+        aperture = sr.aperture()
+        if aperture < radius:
+            big_d = sr.aperture() * 2
+        diffraction_scale = (wavelength * focal_length) / big_d
+        return diffraction_scale
+
+    for radius in radii:
+        bundle = RayBundle(radius, 5, 6)
+        bundle.propagate_bundle(elements)
+        rms_list.append(bundle.rms())
+        diffraction_scale = scale(wavelength, focal_length, radius)
+        diffraction_scale_list.append(diffraction_scale)
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot()
+    ax1.plot(radii, rms_list, label="RMS spot size")
+    ax1.grid(True)
+    ax1.set_xlabel("Bundle Radius (mm)")
+    ax1.set_ylabel("RMS Spread of Bundle Spot (mm)")
+    ax2 = ax1.twinx()
+    ax2.plot(radii, diffraction_scale_list, color = "red", label="Diffraction scale")
+    ax2.set_ylabel("Diffraction Scale (mm)")
+
+    fig.legend()
+
+    bundle = RayBundle(2.5, 5, 6)
+    bundle.propagate_bundle(elements)
+    return fig, bundle.rms(), scale(wavelength, focal_length, 2.5)
 
 
 @SaveOutput(["task15a", "task15b"], plot_output_indices=itemgetter(0, 2))
@@ -255,7 +298,21 @@ def task15():
     Returns:
         tuple[Figure, float, Figure, float]: the spot plots and rms for plano-convex and convex-plano.
     """
-    return
+
+    def run_lens(curvatures):
+        lens = PlanoConvex(curvature = curvatures)
+        focal_point = lens.focal_point()
+        op = OutputPlane(focal_point)
+        bundle = RayBundle()
+        bundle.propagate_bundle([lens, op])
+        plot = bundle.spot_plot()
+        return plot, focal_point
+
+    pc_plot, pc_focal_point = run_lens(-0.02)
+    cp_plot, cp_focal_point = run_lens(0.02)
+
+    return (pc_plot, pc_focal_point, cp_plot, cp_focal_point)
+
 
 
 @SaveOutput("task16", plot_output_indices=itemgetter(0))
@@ -274,7 +331,67 @@ def task16():
     Returns:
         tuple[Figure, float, float, float]: the plot, RMS for plano-convex, RMS for convex-plano, diffraction scale.
     """
-    return
+
+    cp_lens = PlanoConvex(curvature = 0.02)
+    pc_lens = PlanoConvex(curvature = -0.02)
+    lenses = [pc_lens, cp_lens]
+
+    def scale(wavelength, focal_length, radius): 
+        """Calulates the diffraction scale"""
+        big_d = radius * 2
+        aperture = lens.aperture()
+        if aperture < radius:
+            big_d = lens.aperture() * 2
+        diffraction_scale = (wavelength * focal_length) / big_d
+        return diffraction_scale
+
+    wavelength = 588e-6
+    radii = np.linspace(0.1, 10, 100)
+    big_rms_list = []
+    big_diffraction_scale_list = []
+    rms_35mm_list = []
+    diffraction_scale_35mm_list = []
+
+    for lens in lenses:
+        focal_point = lens.focal_point()
+        focal_length = np.round(focal_point - lens.z_0() - lens.thickness(), 2)
+        print(focal_length)
+        op = OutputPlane(focal_point)
+        elements = [lens, op]
+        rms_list = []
+        diffraction_scale_list = []
+
+        for radius in radii:
+            bundle = RayBundle(radius, 5, 6)
+            bundle.propagate_bundle(elements)
+            rms_list.append(bundle.rms())
+            diffraction_scale = scale(wavelength, focal_length, radius)
+            diffraction_scale_list.append(diffraction_scale)
+
+        big_rms_list.append(rms_list)
+        big_diffraction_scale_list.append(diffraction_scale_list)
+        bundle = RayBundle(3.5, 5, 6)
+        bundle.propagate_bundle(elements)
+        rms_35mm_list.append(bundle.rms())
+        diffraction_scale_35mm_list.append(scale(wavelength, focal_length, 3.5))
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot()
+
+    ax1.plot(radii, big_rms_list[1], label="P-C RMS")
+    ax1.plot(radii, big_rms_list[0], label="C-P RMS")
+    ax1.grid(True)
+    ax1.set_xlabel("Bundle Radius (mm)")
+    ax1.set_ylabel("RMS Spread of Bundle Spot (mm)")
+
+    ax2 = ax1.twinx()
+    ax2.plot(radii, big_diffraction_scale_list[1], color="red", label= "P-C diffraction scale")
+    ax2.plot(radii, big_diffraction_scale_list[0], color="green", label="C-P diffraction scale",)
+    ax2.set_ylabel("Diffraction Scale (mm)")
+    fig.legend()
+
+    return (fig, rms_35mm_list[0], rms_35mm_list[1], diffraction_scale_35mm_list[1])
+
 
 
 @SaveOutput("task17", plot_output_indices=itemgetter(0))
@@ -365,13 +482,13 @@ if __name__ == "__main__":
     FIG13, TASK13_RMS = task13()
 
     # Run task 14 function
-    # FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
+    FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
 
     # Run task 15 function
-    # FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
+    FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
 
     # Run task 16 function
-    # FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
+    FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
 
     # Run task 17 function
     # FIG17, CP_RMS, BICONVEX_RMS = task17()

@@ -998,7 +998,9 @@ class TestTask20:
 
     def test_ray_wavelength(self, rays):
         assert "wavelength" in signature(rays.Ray).parameters
-        assert "wavelength" in vars(rays.Ray)
+        ray = rays.Ray(pos=[0., 0., 0.], direc=[0., 0., 1.], wavelength=700e-9)
+        assert hasattr(ray, "wavelength")
+        assert np.isclose(ray.wavelength, 700e-9)
 
     def test_dispersive_material(self, ph, elements):
         assert "DispersiveMaterial" in vars(ph)

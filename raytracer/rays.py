@@ -13,10 +13,8 @@ class Ray:
         """
         if pos is None:
             pos = np.array([0, 0, 0], dtype = float)
-
         if direc is None:
             direc = np.array([0, 0, 1], dtype = float)
-
         pos = np.array(pos, dtype = float)
         direc = np.array(direc, dtype = float)
         self.dimension_check(pos, direc)
@@ -66,7 +64,7 @@ class Ray:
 
 class RayBundle:
     """Generates a bundle of Rays"""
-    def __init__(self, rmax = 5, nrings = 5, multi = 6):
+    def __init__(self, rmax = 5.0, nrings = 5, multi = 6):
         """Initializes a ray bundle"""
         self.__positions_3d = np.array(list(rtrings(rmax, nrings, multi)))
         self.rays = list(self.ray_bundle(self.__positions_3d))
@@ -101,24 +99,24 @@ class RayBundle:
 
         return fig
 
-    def rms(self):
-        """Calculates the RMS spread from the optical axis"""
+    def xy(self, rays):
+        """Returns the x_y_vertices"""
         x_y_vertices = []
-        for ray in self.rays:
+        for ray in rays:
             x_y_vertex = ray.pos()[:2]
             x_y_vertices.append(x_y_vertex)
-        x_y_vertices = np.array(x_y_vertices)
+        return np.array(x_y_vertices)
+
+    def rms(self):
+        """Calculates the RMS spread from the optical axis"""
+        x_y_vertices = self.xy(self.rays)
         magnitude_squared = np.sum(x_y_vertices ** 2, axis = 1)
         rms = np.sqrt(np.mean(magnitude_squared))
         return rms
 
     def spot_plot(self):
         """Shows the intersection between the rays and an arbitrary plane"""
-        x_y_vertices = []
-        for ray in self.rays:
-            x_y_vertex = ray.pos()[:2]
-            x_y_vertices.append(x_y_vertex)
-        x_y_vertices = np.array(x_y_vertices)
+        x_y_vertices = self.xy(self.rays)
         x_position = x_y_vertices[:, 0]
         y_position = x_y_vertices[:, 1]
         fig = plt.figure()

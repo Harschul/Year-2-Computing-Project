@@ -9,22 +9,77 @@ class OpticalElement:
     def intercept(self, ray):
         """Base for the intercept"""
         raise NotImplementedError('intercept() needs to be implemented in derived classes')
+
     def propagate_ray(self, ray):
         """Base for the propogate method"""
         raise NotImplementedError('propagate_ray() needs to be implemented in derived classes')
 
+    def plane_intercept(self, ray, z_0, aperture = np.inf):
+        """Return intercept with plane z = z_0."""
+        pos = ray.pos()
+        direc = ray.direc()
+        z_direction = direc[2]
+
+        if z_direction == 0:
+            return None
+
+        distance = (z_0 - pos[2]) / z_direction
+        if distance <= 0:
+            return None
+
+        intercept = pos + distance * direc
+        axis_vector = intercept[:2]
+        axis_dist = np.linalg.norm(axis_vector)
+        if axis_dist > aperture:
+            return None
+
+        return intercept
+
+    def focal_point(self):
+        """Calculates the paraxial focus of this object"""
+        #ys = np.linspace(0.01, 0.1, 50)
+        ys = [0.01, 0.02, 0.05, 0.1]
+        z_crossings = []
+        for i in ys:
+            paraxial_pos = [0, i, 1]
+            paraxial_direc = [0, 0, 1]
+            ray = Ray(paraxial_pos, paraxial_direc)
+            self.propagate_ray(ray)
+            y_direction = ray.direc()[1]
+            if y_direction == 0:
+                continue
+            y_position = ray.pos()[1]
+            number_of_vectors = -y_position / y_direction
+            if number_of_vectors <= 0:
+                continue
+            crossing = ray.pos()[2] + number_of_vectors * ray.direc()[2]
+            z_crossings.append(crossing)
+
+        return np.mean(z_crossings)
 
 class SphericalRefraction(OpticalElement):
     """Shperical refraction implementation"""
-    def __init__(self, *, z_0, aperture, curvature, n_1, n_2):
+    def __init__(
+        self,
+        *,
+        z_0 = 100.0,
+        aperture = 34.0,
+        curvature = 0.03,
+        n_1 = 1.0,
+        n_2 = 1.5
+    ):
         """Create spherical refraction object"""
         self.__z_0 = z_0
         self.__aperture = aperture
         self.__curvature = curvature
         self.__n_1 = n_1
         self.__n_2 = n_2
-        self.__radius = 1 / curvature
-        self.__centre = np.array([0.0, 0.0, self.__z_0 + self.__radius])
+        if curvature == 0:
+            self.__radius = None
+            self.__centre = None
+        else:
+            self.__radius = 1 / curvature
+            self.__centre = np.array([0.0, 0.0, self.__z_0 + self.__radius])
 
     def z_0(self):
         """Returns a copy of z0"""
@@ -53,11 +108,10 @@ class SphericalRefraction(OpticalElement):
     def intercept(self, ray):
         """Return the closest valid ray intercept with the spherical surface."""
         if self.curvature() == 0:
-            return None
+            return self.plane_intercept(ray, self.z_0(), self.aperture())
 
         pos = ray.pos()
         direc = ray.direc()
-
         r = pos - self.__centre
         k_hat = direc
         r_dot_k_hat = np.dot(r, k_hat)
@@ -89,43 +143,32 @@ class SphericalRefraction(OpticalElement):
         if len(intercepts) == 1:
             return intercepts[0]
 
-        return intercepts[np.argmin(possible_l_vals)]
+        if self.curvature() > 0:
+            intercept = intercepts[np.argmin(possible_l_vals)]
+        else:
+            intercept = intercepts[np.argmax(possible_l_vals)]
+
+        return intercept
 
     def propagate_ray(self, ray):
         """Propoagates ray"""
         new_position = self.intercept(ray)
 
         if new_position is None:
-            return
+            return None
 
         direc = ray.direc()
-        normal = new_position - self.centre()
+        if self.curvature() != 0:
+            normal = new_position - self.centre()
+        else:
+            normal = np.array([0.0, 0.0, -1.0])
+
+        if np.dot(direc, normal) > 0:
+            normal = -normal
+
         new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
 
         return ray.append(new_position, new_direc)
-
-    def focal_point(self):
-        """Calculates the paraxial focus of this object"""
-        ys = [0.01, 0.02, 0.05, 0.1]
-        z_crossings = []
-        for i in ys:
-            paraxial_pos = [0, i, 1]
-            paraxial_direc = [0, 0, 1]
-            ray = Ray(paraxial_pos, paraxial_direc)
-            self.propagate_ray(ray)
-            y_direction = ray.direc()[1]
-            if y_direction == 0:
-                continue
-            y_position = ray.pos()[1]
-            number_of_vectors = -y_position / y_direction
-            if number_of_vectors <= 0:
-                continue
-            crossing = ray.pos()[2] + number_of_vectors * ray.direc()[2]
-            z_crossings.append(crossing)
-
-        return np.mean(z_crossings)
-
-
 
 class OutputPlane(OpticalElement):
     """Plane"""
@@ -139,21 +182,13 @@ class OutputPlane(OpticalElement):
 
     def intercept(self, ray):
         """Intercept"""
-        pos = ray.pos()
-        direc = ray.direc()
-        z_distance = self.__z_0 - pos[2]
-        z_direction = direc[2]
-        number_vectors = z_distance / z_direction
-
-        if z_direction == 0:
-            return None
-        if number_vectors <= 0:
-            return None
-        intercept = pos + direc * number_vectors
-
+        intercept = self.plane_intercept(ray, self.z_0())
         return intercept
 
     def propagate_ray(self, ray):
+        """Propogates ray"""
         end_position = self.intercept(ray)
+        if end_position is None:
+            return None
         direc = [0, 0, 1]
         ray.append(end_position, direc)
