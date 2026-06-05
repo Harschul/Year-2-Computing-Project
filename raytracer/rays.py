@@ -63,6 +63,37 @@ class Ray:
         """Return the position history of the ray"""
         return self.__pos
 
+    @property
+    def z_int(self):
+        """Return the z where the ray intercepts the optical axis"""
+        pos = self.pos()
+        direc = self.direc()
+        x_pos = pos[0]
+        y_pos = pos[1]
+        x_direc = direc[0]
+        y_direc = direc[1]
+
+        if not np.isclose(x_direc, 0.0):
+            number_vectors = -x_pos / x_direc
+
+        elif not np.isclose(y_direc, 0.0):
+            number_vectors = -y_pos / y_direc
+
+        else:
+            if np.allclose(pos[:2], [0.0, 0.0]):
+                return pos[2]
+            raise ValueError("The ray does not intercept the optical axis.")
+
+        if number_vectors < 0:
+            raise ValueError("The ray does not intercept the optical axis.")
+
+        intercept_position = pos + number_vectors * direc
+
+        if not np.allclose(intercept_position[:2], [0.0, 0.0]):
+            raise ValueError("The ray does not intercept the optical axis.")
+
+        return intercept_position[2]
+
 class RayBundle:
     """Generates a bundle of Rays"""
     def __init__(self, rmax = 5.0, nrings = 5, multi = 6):

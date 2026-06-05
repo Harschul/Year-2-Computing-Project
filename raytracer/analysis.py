@@ -387,8 +387,8 @@ def task16():
     ax1.set_ylabel("RMS Spread of Bundle Spot (mm)")
 
     ax2 = ax1.twinx()
-    ax2.plot(radii, big_diffraction_scale_list[1], color="red", label= "P-C diffraction scale")
-    ax2.plot(radii, big_diffraction_scale_list[0], color="green", label="C-P diffraction scale",)
+    ax2.plot(radii, big_diffraction_scale_list[1], color = "red", label = "P-C diffraction scale")
+    ax2.plot(radii, big_diffraction_scale_list[0], color = "green", label ="C-P diffraction scale",)
     ax2.set_ylabel("Diffraction Scale (mm)")
     fig.legend()
 
@@ -413,7 +413,7 @@ def task17():
         tuple[Figure, float, float]: The combined spot plot, RMS for the PC lens, RMS for the BiConvex lens
     """
 
-    pc_lens = PlanoConvex(curvature=0.02)
+    pc_lens = PlanoConvex(curvature = 0.02)
     pc_focal_point = pc_lens.focal_point()
     print(pc_focal_point)
     pc_op = OutputPlane(pc_focal_point)
@@ -488,7 +488,43 @@ def task19():
     Returns:
         tuple[Figure, Figure]: Transverse spherical aberration plot, longitudinal spherical aberration plot
     """
-    return
+    lens = PlanoConvex(curvature = 0.02)
+    focal_point = lens.focal_point()
+    op = OutputPlane(focal_point)
+
+    radii = np.linspace(0.1, 20, 100)
+    rms_values = []
+    for radius in radii:
+        bundle = RayBundle(radius, 5, 6)
+        bundle.propagate_bundle([lens, op])
+        rms_values.append(bundle.rms())
+
+    fig1 = plt.figure()
+    plt.plot(radii, rms_values)
+    plt.grid(True)
+    plt.xlabel("Bundle radius (mm)")
+    plt.ylabel("RMS spot size at paraxial focal plane (mm)")
+    plt.title("Transverse spherical aberration")
+
+    ray_heights = np.linspace(0.1, 20, 100)
+    z_intercepts = []
+
+    for i in ray_heights:
+        ray = Ray([0, i, 0], [0, 0, 1])
+        lens.propagate_ray(ray)
+        try:
+            z_intercept = ray.z_int[2]
+        except ValueError:
+            z_intercept = np.nan
+        z_intercepts.append(z_intercept)
+
+    fig2 = plt.figure()
+    plt.plot(ray_heights, z_intercepts)
+    plt.grid(True)
+    plt.xlabel("distance from optical axis (mm)")
+    plt.ylabel("z intercept with optical axis (mm)")
+
+    return fig1, fig2
 
 
 @SaveOutput("task20")
@@ -536,10 +572,10 @@ if __name__ == "__main__":
     #FIG17, CP_RMS, BICONVEX_RMS = task17()
 
     # Run task 18 function
-    FIG18, FOCAL_POINT = task18()
+    #FIG18, FOCAL_POINT = task18()
 
     # Run task 19 function
-    # FIG19_TVSA, FIG19_LGSA = task19()
+    FIG19_TVSA, FIG19_LGSA = task19()
 
     # Run task 20 function
     # FIG20 = task20()
