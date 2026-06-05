@@ -8,6 +8,7 @@ from raytracer._utils.decorators import SaveOutput
 from raytracer.rays import Ray, RayBundle
 from raytracer.elements import SphericalRefraction, OutputPlane, SphericalReflection
 from raytracer.lenses import PlanoConvex, BiConvex
+from raytracer.physics import DispersiveMaterial
 
 
 def task8():
@@ -513,7 +514,7 @@ def task19():
         ray = Ray([0, i, 0], [0, 0, 1])
         lens.propagate_ray(ray)
         try:
-            z_intercept = ray.z_int[2]
+            z_intercept = ray.z_int
         except ValueError:
             z_intercept = np.nan
         z_intercepts.append(z_intercept)
@@ -539,7 +540,36 @@ def task20():
     Returns:
         Figure: The ray track plot.
     """
-    return
+    b_coeff = (1.03961212, 0.231792344, 1.01046945)
+    c_coeff = (0.00600069867e-6, 0.0200179144e-6, 103.560653e-6)
+    bk7 = DispersiveMaterial(b_coeff = b_coeff, c_coeff = c_coeff)
+    lens = BiConvex(curvature1 = 0.02,curvature2 = -0.02, n_inside = bk7)
+    op = OutputPlane(200)
+
+    rays = []
+    colours = ["blue", "green","red"]
+    wavelengths = [486.1e-6, 587.6e-6, 656.3e-6]
+
+    for i in wavelengths:
+        ray = Ray(pos=[0, 2, 0], direc=[0, 0, 1], wavelength = i)
+        lens.propagate_ray(ray)
+        op.propagate_ray(ray)
+        rays.append(ray)
+
+    fig = plt.figure()
+    plt.xlabel("z position (mm)")
+    plt.ylabel("y position (mm)")
+    plt.title("Dispersion through BK7 biconvex lens")
+    plt.grid(True)
+
+    for ray, colour, wavelength in zip(rays, colours, wavelengths):
+        vertices = np.array(ray.vertices())
+        z_values = vertices[:, 2]
+        y_values = vertices[:, 1]
+        plt.plot(z_values, y_values, color=colour, label=f"{wavelength * 1e6:.1f} nm")
+
+    plt.legend()
+    return fig
 
 
 if __name__ == "__main__":
@@ -575,7 +605,7 @@ if __name__ == "__main__":
     #FIG18, FOCAL_POINT = task18()
 
     # Run task 19 function
-    FIG19_TVSA, FIG19_LGSA = task19()
+    #FIG19_TVSA, FIG19_LGSA = task19()
 
     # Run task 20 function
-    # FIG20 = task20()
+    FIG20 = task20()

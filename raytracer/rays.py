@@ -6,7 +6,7 @@ from raytracer.genpolar import rtrings
 
 class Ray:
     """Ray object"""
-    def __init__(self, pos = None, direc = None):
+    def __init__(self, pos = None, direc = None, wavelength = 588e-6):
         """
         Initialize and creates a ray object which has a origin position
         and a direction. 
@@ -21,6 +21,7 @@ class Ray:
         self.normalise(direc)
         self.__pos = [pos]
         self.__direc = direc
+        self.__wavelength = wavelength
 
 
     def normalise(self, vector):
@@ -31,6 +32,10 @@ class Ray:
         vector[:] = vector/norm
         return vector
 
+    @property
+    def wavelength(self):
+        """Returns the wavelength"""
+        return self.__wavelength
 
     def dimension_check(self, position, direction):
         """Checks dimensions of input arrays"""

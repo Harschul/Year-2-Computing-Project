@@ -92,13 +92,19 @@ class SphericalRefraction(OpticalElement):
         """Returns a copy of curvature"""
         return self.__curvature
 
-    def n_1(self):
-        """Returns a copy of the n_1 value"""
-        return self.__n_1
+    def n_check(self, n, wavelength):
+        """Return refractive index from either a float or a material."""
+        if hasattr(n, "ref_index"):
+            return n.ref_index(wavelength)
+        return n
 
-    def n_2(self):
+    def n_1(self, wavelength = 588e-6):
+        """Returns a copy of the n_1 value"""
+        return self.n_check(self.__n_1, wavelength)
+
+    def n_2(self, wavelength = 588e-6):
         """Returns a copy of the n_2 value"""
-        return self.__n_2
+        return self.n_check(self.__n_2, wavelength)
 
     def centre(self):
         """Returns the centre"""
@@ -166,7 +172,7 @@ class SphericalRefraction(OpticalElement):
         if np.dot(direc, normal) > 0:
             normal = -normal
 
-        new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
+        new_direc = physics.refract(direc, normal, self.n_1(ray.wavelength), self.n_2(ray.wavelength))
 
         if new_direc is None:
             return None

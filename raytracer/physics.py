@@ -50,3 +50,26 @@ def reflect(direc, normal):
     direc_hat, normal_hat = normalize(direc, normal)
     new_direc_refl = direc_hat - (2 * (np.dot(direc_hat, normal_hat) * normal_hat))
     return new_direc_refl / np.linalg.norm(new_direc_refl)
+
+class DispersiveMaterial():
+    """Creates dispersive material"""
+    def __init__ (self, b_coeff = (1., 2., 3.), c_coeff = (4., 5., 6.)):
+        """Initialises the material with coefficients"""
+        self.__b_coeff = b_coeff
+        self.__c_coeff = c_coeff
+
+    def b_coeff(self):
+        """Returns the b coefficient"""
+        return self.__b_coeff
+
+    def c_coeff(self):
+        """Retruns the c coefficient"""
+        return self.__c_coeff
+
+    def ref_index(self, wavelength):
+        """Return the refractive index for a given wavelength."""
+        wavelength_squared = wavelength ** 2
+        total = 1.0
+        for b_coeff, c_coeff in zip(self.b_coeff(), self.c_coeff()):
+            total += (b_coeff * wavelength_squared) / (wavelength_squared - c_coeff)
+        return np.sqrt(total)

@@ -1,13 +1,22 @@
 """Module containing all lens classes"""
+import numpy as np
 from raytracer import elements
 
+def n_check(n, wavelength):
+    """Return refractive index from either a float or a material"""
+    if hasattr(n, "ref_index") and callable(n.ref_index):
+        return n.ref_index(wavelength)
 
-def _lensmaker_focal_point(z_0, thickness, curvature1, curvature2, n_inside, n_outside):
+    return n
+
+def _lensmaker_focal_point(z_0, thickness, curvature1, curvature2, n_inside, n_outside, wavelength = 588e-6):
     """Return the back focal point using the thick lens Lensmaker equation"""
-    n_ratio = n_inside / n_outside
+    n1 = n_check(n_inside, wavelength)
+    n2 = n_check(n_outside, wavelength)
+    n_ratio = n1 / n2
     optical_power = (n_ratio - 1) * (curvature1 - curvature2 + ((n_ratio - 1) * thickness * curvature1 * curvature2) / n_ratio)
     if optical_power == 0:
-        focal_length = 0
+        focal_length = np.inf
     else:
         focal_length = 1 / optical_power
     back_focal_distance = focal_length * (1 - ((n_ratio - 1) * thickness * curvature1) / n_ratio)
@@ -45,16 +54,16 @@ class PlanoConvex(elements.OpticalElement):
             z_0 = self.z_0(),
             aperture = self.aperture(),
             curvature = curvature1,
-            n_1 = self.n_outside(),
-            n_2 = self.n_inside(),
+            n_1 = self.__n_outside,
+            n_2 = self.__n_inside,
         )
 
         self.sr_2 = elements.SphericalRefraction(
             z_0 = self.z_0() + self.thickness(),
             aperture = self.aperture(),
             curvature = curvature2,
-            n_1 = self.n_inside(),
-            n_2 = self.n_outside(),
+            n_1 = self.__n_inside,
+            n_2 = self.__n_outside,
         )
 
     def z_0(self):
@@ -65,13 +74,13 @@ class PlanoConvex(elements.OpticalElement):
         """Return the curvature1"""
         return self.__curvature
 
-    def n_inside(self):
+    def n_inside(self, wavelength = 588e-6):
         """Return the refractive index inside the lens"""
-        return self.__n_inside
+        return n_check(self.__n_inside, wavelength)
 
-    def n_outside(self):
+    def n_outside(self, wavelength = 588e-6):
         """Return the refractive index outside the lens"""
-        return self.__n_outside
+        return n_check(self.__n_outside, wavelength)
 
     def thickness(self):
         """Return the lens thickness"""
@@ -81,15 +90,16 @@ class PlanoConvex(elements.OpticalElement):
         """Return the aperture"""
         return self.__aperture
 
-    def focal_point(self):
+    def focal_point(self, wavelength = 588e-6):
         """Return the back focal point of the lens"""
         return _lensmaker_focal_point(
             self.z_0(),
             self.thickness(),
             self.sr_1.curvature(),
             self.sr_2.curvature(),
-            self.n_inside(),
-            self.n_outside(),
+            self.__n_inside,
+            self.__n_outside,
+            wavelength,
         )
 
     def intercept(self, ray):
@@ -130,16 +140,16 @@ class BiConvex(elements.OpticalElement):
             z_0 = self.z_0(),
             aperture = self.aperture(),
             curvature = self.curvature1(),
-            n_1 = self.n_outside(),
-            n_2 = self.n_inside(),
+            n_1 = self.__n_outside,
+            n_2 = self.__n_inside,
         )
 
         self.sr_2 = elements.SphericalRefraction(
             z_0 = self.z_0() + self.thickness(),
             aperture = self.aperture(),
             curvature = self.curvature2(),
-            n_1 = self.n_inside(),
-            n_2 = self.n_outside(),
+            n_1 = self.__n_inside,
+            n_2 = self.__n_outside,
         )
 
     def z_0(self):
@@ -154,13 +164,13 @@ class BiConvex(elements.OpticalElement):
         """Return the curvature2"""
         return self.__curvature2
 
-    def n_inside(self):
+    def n_inside(self, wavelength = 588e-6):
         """Return the refractive index inside the lens"""
-        return self.__n_inside
+        return n_check(self.__n_inside, wavelength)
 
-    def n_outside(self):
+    def n_outside(self, wavelength = 588e-6):
         """Return the refractive index outside the lens"""
-        return self.__n_outside
+        return n_check(self.__n_outside, wavelength)
 
     def thickness(self):
         """Return the lens thickness"""
@@ -170,15 +180,16 @@ class BiConvex(elements.OpticalElement):
         """Return the aperture"""
         return self.__aperture
 
-    def focal_point(self):
+    def focal_point(self, wavelength = 588e-6):
         """Return the back focal point of the lens"""
         return _lensmaker_focal_point(
             self.z_0(),
             self.thickness(),
             self.curvature1(),
             self.curvature2(),
-            self.n_inside(),
-            self.n_outside(),
+            self.__n_inside,
+            self.__n_outside,
+            wavelength,
         )
 
     def intercept(self, ray):
