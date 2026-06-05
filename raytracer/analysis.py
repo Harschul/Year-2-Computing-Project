@@ -578,6 +578,14 @@ def task19():
     ax2.set_ylabel("z-intercept with optical axis / mm")
     ax2.set_title("Task 19b: Longitudinal spherical aberration",
                   fontsize=13, fontweight="bold", pad=10)
+    ax2.axhline(
+        focal_point,
+        color = "red",
+        linestyle="--",
+        linewidth=2,
+        label=f"Paraxial focal point = {focal_point:.2f} mm"
+    )
+    ax2.legend()
     fig2.tight_layout()
     return fig1, fig2
 
