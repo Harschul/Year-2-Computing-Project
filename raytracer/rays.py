@@ -114,13 +114,23 @@ class RayBundle:
         rms = np.sqrt(np.mean(magnitude_squared))
         return rms
 
-    def spot_plot(self):
+    def spot_plot(self, fig = None, label = None):
         """Shows the intersection between the rays and an arbitrary plane"""
         x_y_vertices = self.xy(self.rays)
         x_position = x_y_vertices[:, 0]
         y_position = x_y_vertices[:, 1]
-        fig = plt.figure()
-        plt.scatter(x_position, y_position)
-        plt.xlabel("x")
-        plt.ylabel("y")
+
+        if fig is None:
+            fig = plt.figure()
+        else:
+            plt.figure(fig.number)
+
+        plt.scatter(x_position, y_position, s=10, label=label)
+        plt.axis("equal")
+        plt.xlabel("x position at output plane (mm)")
+        plt.ylabel("y position at output plane (mm)")
+        plt.grid(True)
+
+        if label is not None:
+            plt.legend()
         return fig

@@ -1,12 +1,14 @@
 """Analysis module."""
 
-from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import minimize
+from operator import itemgetter
 from raytracer._utils.decorators import SaveOutput
 from raytracer.rays import Ray, RayBundle
 from raytracer.elements import SphericalRefraction, OutputPlane
-from raytracer.lenses import PlanoConvex
+from raytracer.lenses import PlanoConvex, BiConvex
+
 
 def task8():
     """
@@ -354,8 +356,7 @@ def task16():
 
     for lens in lenses:
         focal_point = lens.focal_point()
-        focal_length = np.round(focal_point - lens.z_0() - lens.thickness(), 2)
-        print(focal_length)
+        focal_length = focal_point - lens.z_0()
         op = OutputPlane(focal_point)
         elements = [lens, op]
         rms_list = []
@@ -373,6 +374,7 @@ def task16():
         bundle = RayBundle(3.5, 5, 6)
         bundle.propagate_bundle(elements)
         rms_35mm_list.append(bundle.rms())
+        print(bundle.rms())
         diffraction_scale_35mm_list.append(scale(wavelength, focal_length, 3.5))
 
     fig = plt.figure()
@@ -410,7 +412,35 @@ def task17():
     Returns:
         tuple[Figure, float, float]: The combined spot plot, RMS for the PC lens, RMS for the BiConvex lens
     """
-    return
+
+    pc_lens = PlanoConvex(curvature=0.02)
+    pc_focal_point = pc_lens.focal_point()
+    pc_op = OutputPlane(pc_focal_point)
+    pc_bundle = RayBundle()
+    pc_bundle.propagate_bundle([pc_lens, pc_op])
+    pc_rms = pc_bundle.rms()
+
+    def minimize_func(curvatures):
+        """Function to be minimized"""
+        curvature_1 = curvatures[0]
+        curvature_2 = curvatures[1]
+        bc_lens = BiConvex(curvature1 = curvature_1, curvature2 = curvature_2)
+        bc_bundle = RayBundle()
+        bc_bundle.propagate_bundle([bc_lens, pc_op])
+        bc_rms = bc_bundle.rms()
+        return bc_rms
+
+    optimal_curvatures = minimize(minimize_func, [0.02, -0.02])
+    optimized_c1 = optimal_curvatures.x[0]
+    optimized_c2 = optimal_curvatures.x[1]
+    bc_lens = BiConvex(curvature1 = optimized_c1, curvature2 = optimized_c2)
+    bc_bundle = RayBundle()
+    bc_bundle.propagate_bundle([bc_lens, pc_op])
+    bc_rms = bc_bundle.rms()
+    fig = pc_bundle.spot_plot()
+    fig = bc_bundle.spot_plot(fig=fig)
+    fig = bc_bundle.track_plot()
+    return fig, pc_rms, bc_rms
 
 
 @SaveOutput("task18", plot_output_indices=itemgetter(0))
@@ -491,7 +521,7 @@ if __name__ == "__main__":
     FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
 
     # Run task 17 function
-    # FIG17, CP_RMS, BICONVEX_RMS = task17()
+    FIG17, CP_RMS, BICONVEX_RMS = task17()
 
     # Run task 18 function
     # FIG18, FOCAL_POINT = task18()

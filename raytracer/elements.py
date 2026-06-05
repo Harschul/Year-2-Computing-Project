@@ -37,7 +37,6 @@ class OpticalElement:
 
     def focal_point(self):
         """Calculates the paraxial focus of this object"""
-        #ys = np.linspace(0.01, 0.1, 50)
         ys = [0.01, 0.02, 0.05, 0.1]
         z_crossings = []
         for i in ys:
@@ -123,7 +122,8 @@ class SphericalRefraction(OpticalElement):
         l_1 = -r_dot_k_hat + np.sqrt(discriminant)
         l_2 = -r_dot_k_hat - np.sqrt(discriminant)
         l_vals = np.array([l_1, l_2])
-        possible_l_vals = l_vals[l_vals > 0]
+        EPS = 1e-9
+        possible_l_vals = l_vals[l_vals > EPS]
 
         if possible_l_vals.size == 0:
             return None
@@ -167,6 +167,9 @@ class SphericalRefraction(OpticalElement):
             normal = -normal
 
         new_direc = physics.refract(direc, normal, self.n_1(), self.n_2())
+
+        if new_direc is None:
+            return None
 
         return ray.append(new_position, new_direc)
 
