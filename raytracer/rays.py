@@ -57,6 +57,7 @@ class Ray:
         self.normalise(direc)
         self.__pos.append(np.array(pos))
         self.__direc = np.array(direc)
+        return self
 
     def vertices(self):
         """Return the position history of the ray"""
@@ -77,10 +78,14 @@ class RayBundle:
             yield ray
 
     def propagate_bundle(self, elements):
-        """Propogates all rays through an optical element"""
+        """Propagates surviving rays through optical elements."""
         for element in elements:
+            surviving_rays = []
             for ray in self.rays:
-                element.propagate_ray(ray)
+                result = element.propagate_ray(ray)
+                if result is not None:
+                    surviving_rays.append(ray)
+            self.rays = surviving_rays
 
     def track_plot(self):
         """Plots the Rays in 3D"""

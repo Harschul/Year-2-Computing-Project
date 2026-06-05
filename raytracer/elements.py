@@ -194,4 +194,27 @@ class OutputPlane(OpticalElement):
         if end_position is None:
             return None
         direc = [0, 0, 1]
-        ray.append(end_position, direc)
+        return ray.append(end_position, direc)
+
+
+class SphericalReflection(SphericalRefraction):
+    """Generates spherical surface that reflects"""
+    def propagate_ray(self, ray):
+        """Propagates a ray by reflecting it from the spherical surface."""
+        new_position = self.intercept(ray)
+
+        if new_position is None:
+            return None
+
+        direc = ray.direc()
+
+        if self.curvature() != 0:
+            normal = new_position - self.centre()
+        else:
+            normal = np.array([0.0, 0.0, -1.0])
+
+        if np.dot(direc, normal) > 0:
+            normal = -normal
+
+        new_direc = physics.reflect(direc, normal)
+        return ray.append(new_position, new_direc)

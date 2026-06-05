@@ -1,12 +1,12 @@
 """Analysis module."""
 
+from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import minimize
-from operator import itemgetter
 from raytracer._utils.decorators import SaveOutput
 from raytracer.rays import Ray, RayBundle
-from raytracer.elements import SphericalRefraction, OutputPlane
+from raytracer.elements import SphericalRefraction, OutputPlane, SphericalReflection
 from raytracer.lenses import PlanoConvex, BiConvex
 
 
@@ -356,7 +356,7 @@ def task16():
 
     for lens in lenses:
         focal_point = lens.focal_point()
-        focal_length = focal_point - lens.z_0()
+        focal_length = focal_point - lens.z_0() - lens.thickness()
         op = OutputPlane(focal_point)
         elements = [lens, op]
         rms_list = []
@@ -392,7 +392,7 @@ def task16():
     ax2.set_ylabel("Diffraction Scale (mm)")
     fig.legend()
 
-    return (fig, rms_35mm_list[0], rms_35mm_list[1], diffraction_scale_35mm_list[1])
+    return (fig, rms_35mm_list[0], rms_35mm_list[1], diffraction_scale_35mm_list[0])
 
 
 
@@ -415,6 +415,7 @@ def task17():
 
     pc_lens = PlanoConvex(curvature=0.02)
     pc_focal_point = pc_lens.focal_point()
+    print(pc_focal_point)
     pc_op = OutputPlane(pc_focal_point)
     pc_bundle = RayBundle()
     pc_bundle.propagate_bundle([pc_lens, pc_op])
@@ -422,12 +423,15 @@ def task17():
 
     def minimize_func(curvatures):
         """Function to be minimized"""
+        expected_rays = len(RayBundle().rays)
         curvature_1 = curvatures[0]
         curvature_2 = curvatures[1]
         bc_lens = BiConvex(curvature1 = curvature_1, curvature2 = curvature_2)
         bc_bundle = RayBundle()
         bc_bundle.propagate_bundle([bc_lens, pc_op])
         bc_rms = bc_bundle.rms()
+        if len(bc_bundle.rays) < expected_rays:
+            return 1e6
         return bc_rms
 
     optimal_curvatures = minimize(minimize_func, [0.02, -0.02])
@@ -439,7 +443,6 @@ def task17():
     bc_rms = bc_bundle.rms()
     fig = pc_bundle.spot_plot()
     fig = bc_bundle.spot_plot(fig=fig)
-    fig = bc_bundle.track_plot()
     return fig, pc_rms, bc_rms
 
 
@@ -457,7 +460,16 @@ def task18():
     Returns:
         tuple[Figure, float]: The track plot, the focal point
     """
-    return
+
+    mirror = SphericalReflection(z_0 = 100, aperture = 6, curvature = -0.02)
+    focal_point = mirror.focal_point()
+    op = OutputPlane(50)
+    bundle = RayBundle()
+    elements = [mirror, op]
+    bundle.propagate_bundle(elements)
+    fig = bundle.track_plot()
+
+    return fig, focal_point
 
 
 @SaveOutput(["task19a", "task19b"])
@@ -497,34 +509,34 @@ def task20():
 if __name__ == "__main__":
 
     # Run task 8 function
-    task8()
+    # task8()
     # Run task 10 function
-    FIG10 = task10()
+    # FIG10 = task10()
 
 
     #Run task 11 function
-    FIG11, FOCAL_POINT = task11()
+    # FIG11, FOCAL_POINT = task11()
 
     # Run task 12 function
-    FIG12 = task12()
+    # FIG12 = task12()
 
     # Run task 13 function
-    FIG13, TASK13_RMS = task13()
+    # FIG13, TASK13_RMS = task13()
 
     # Run task 14 function
-    FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
+    # FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
 
     # Run task 15 function
-    FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
+    # FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
 
     # Run task 16 function
-    FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
+    # FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
 
     # Run task 17 function
-    FIG17, CP_RMS, BICONVEX_RMS = task17()
+    #FIG17, CP_RMS, BICONVEX_RMS = task17()
 
     # Run task 18 function
-    # FIG18, FOCAL_POINT = task18()
+    FIG18, FOCAL_POINT = task18()
 
     # Run task 19 function
     # FIG19_TVSA, FIG19_LGSA = task19()

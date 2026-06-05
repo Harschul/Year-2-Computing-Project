@@ -8,15 +8,18 @@ def angle(a, b):
     cos_theta = np.clip(cos_theta, -1.0, 1.0)
     return np.arccos(cos_theta)
 
+def normalize(direc, normal):
+    """Normalization helper"""
+    direc = np.array(direc, dtype=np.float64)
+    normal = np.array(normal, dtype=np.float64)
+    direc_hat = direc / np.linalg.norm(direc)
+    normal_hat = normal / np.linalg.norm(normal)
+    return direc_hat, normal_hat
+
 
 def refract(direc, normal, n_1, n_2):
     """Calculate the new refracted ray direction"""
-    direc = np.array(direc)
-    normal = np.array(normal)
-
-    direc_hat = direc / np.linalg.norm(direc)
-    normal_hat = normal / np.linalg.norm(normal)
-
+    direc_hat, normal_hat = normalize(direc, normal)
     n_ratio = n_1 / n_2
     theta_i = angle(direc, -normal_hat)
     sin_theta_r = n_ratio * np.sin(theta_i)
@@ -41,3 +44,9 @@ def refract(direc, normal, n_1, n_2):
     new_direc_r = basis_2d @ direc_new_basis
 
     return new_direc_r
+
+def reflect(direc, normal):
+    """Reflection function"""
+    direc_hat, normal_hat = normalize(direc, normal)
+    new_direc_refl = direc_hat - (2 * (np.dot(direc_hat, normal_hat) * normal_hat))
+    return new_direc_refl / np.linalg.norm(new_direc_refl)

@@ -1,6 +1,19 @@
 """Module containing all lens classes"""
 from raytracer import elements
 
+
+def _lensmaker_focal_point(z_0, thickness, curvature1, curvature2, n_inside, n_outside):
+    """Return the back focal point using the thick lens Lensmaker equation"""
+    n_ratio = n_inside / n_outside
+    optical_power = (n_ratio - 1) * (curvature1 - curvature2 + ((n_ratio - 1) * thickness * curvature1 * curvature2) / n_ratio)
+    if optical_power == 0:
+        focal_length = 0
+    else:
+        focal_length = 1 / optical_power
+    back_focal_distance = focal_length * (1 - ((n_ratio - 1) * thickness * curvature1) / n_ratio)
+    return z_0 + thickness + back_focal_distance
+
+
 class PlanoConvex(elements.OpticalElement):
     """Creates PlanoConvex lens"""
     def __init__(
@@ -68,6 +81,17 @@ class PlanoConvex(elements.OpticalElement):
         """Return the aperture"""
         return self.__aperture
 
+    def focal_point(self):
+        """Return the back focal point of the lens"""
+        return _lensmaker_focal_point(
+            self.z_0(),
+            self.thickness(),
+            self.sr_1.curvature(),
+            self.sr_2.curvature(),
+            self.n_inside(),
+            self.n_outside(),
+        )
+
     def intercept(self, ray):
         return self.sr_1.intercept(ray)
 
@@ -77,8 +101,8 @@ class PlanoConvex(elements.OpticalElement):
         self.sr_1.propagate_ray(ray)
         new_length = len(ray.vertices())
         if og_length == new_length:
-            return
-        self.sr_2.propagate_ray(ray)
+            return None
+        return self.sr_2.propagate_ray(ray)
 
 class BiConvex(elements.OpticalElement):
     """Creates BiConvex lens"""
@@ -146,6 +170,17 @@ class BiConvex(elements.OpticalElement):
         """Return the aperture"""
         return self.__aperture
 
+    def focal_point(self):
+        """Return the back focal point of the lens"""
+        return _lensmaker_focal_point(
+            self.z_0(),
+            self.thickness(),
+            self.curvature1(),
+            self.curvature2(),
+            self.n_inside(),
+            self.n_outside(),
+        )
+
     def intercept(self, ray):
         return self.sr_1.intercept(ray)
 
@@ -155,8 +190,5 @@ class BiConvex(elements.OpticalElement):
         self.sr_1.propagate_ray(ray)
         new_length = len(ray.vertices())
         if og_length == new_length:
-            return
-        self.sr_2.propagate_ray(ray)
-
-
-
+            return None
+        return self.sr_2.propagate_ray(ray)
