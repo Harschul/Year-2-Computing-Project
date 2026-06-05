@@ -14,7 +14,6 @@ from raytracer.physics import DispersiveMaterial
 def task8():
     """
     Task 8.
-
     In this function you should check your propagate_ray function properly
     finds the correct intercept and correctly refracts a ray. Don't forget
     to check that the correct values are appended to your Ray object.
@@ -24,7 +23,6 @@ def task8():
 
     if len(positions) != len(directions):
         raise RuntimeError("Please ensure a position and direction is defined for each ray")
-
     for pos, direc in zip(positions, directions):
         ray = Ray(pos, direc)
 
@@ -38,7 +36,6 @@ def task8():
 
         intercept = sr.intercept(ray)
         while intercept is not None:
-            #print(intercept)
             sr.propagate_ray(ray)
             intercept = sr.intercept(ray)
 
@@ -47,7 +44,6 @@ def task8():
 def task10():
     """
     Task 10.
-
     In this function you should create Ray objects with the given initial positions.
     These rays should be propagated through the surface, up to the output plane.
     You should then plot the tracks of these rays.
@@ -56,7 +52,6 @@ def task10():
     Returns:
         Figure: the ray path plot.
     """
-
     positions = np.array([
         [0, 4, 0],
         [0, 1, 0],
@@ -75,7 +70,6 @@ def task10():
         [0, 0, 1],
         [0, 0, 1],
     ])
-
     if len(positions) != len(directions):
         raise RuntimeError("Please ensure a position and direction is defined for each ray")
 
@@ -88,30 +82,31 @@ def task10():
         )
 
     op = OutputPlane(250)
-
-    fig = plt.figure()
-    plt.xlabel("z (mm)")
-    plt.ylabel("y (mm)")
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title("Task 10: Ray paths through a spherical refracting surface",
+                 fontsize=13, fontweight="bold", pad=10)
+    ax.set_xlabel("z position / mm")
+    ax.set_ylabel("y position / mm")
+    ax.grid(True, alpha=0.35)
 
     for pos, direc in zip(positions, directions):
         ray = Ray(pos, direc)
-        intercept = sr.intercept(ray)
-        print(intercept)
         sr.propagate_ray(ray)
         op.propagate_ray(ray)
         z_values = np.array(ray.vertices())[:, 2]
         y_values = np.array(ray.vertices())[:, 1]
-        plt.plot(z_values, y_values)
+        ax.plot(z_values, y_values, linewidth=1.8,
+                label=f"initial y = {pos[1]:g} mm")
 
+    ax.legend(title="Input ray", fontsize=8)
+    fig.tight_layout()
     return fig
-
 
 
 @SaveOutput("task11", plot_output_indices=itemgetter(0))
 def task11():
     """
     Task 11.
-
     In this function you should propagate the three given paraxial rays through the system
     to the output plane and the tracks of these rays should then be plotted.
     This function should return the following items as a tuple in the following order:
@@ -147,23 +142,26 @@ def task11():
     focal_point = sr.focal_point()
     op = OutputPlane(focal_point)
 
-    fig = plt.figure()
-    plt.xlabel("z (mm)")
-    plt.ylabel("y (mm)")
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(f"Task 11: Paraxial rays focused at z = {focal_point:.2f} mm",
+                 fontsize=13, fontweight="bold", pad=10)
+    ax.set_xlabel("z position / mm")
+    ax.set_ylabel("y position / mm")
+    ax.grid(True, alpha=0.35)
 
     for pos, direc in zip(positions, directions):
         ray = Ray(pos, direc)
-        intercept = sr.intercept(ray)
-        print(intercept)
         sr.propagate_ray(ray)
         op.propagate_ray(ray)
         z_values = np.array(ray.vertices())[:, 2]
         y_values = np.array(ray.vertices())[:, 1]
-        plt.plot(z_values, y_values)
+        ax.plot(z_values, y_values, linewidth=1.8,
+                label=f"initial y = {pos[1]:g} mm")
 
+    ax.axvline(focal_point, linestyle="--", linewidth=1.2, label="focal plane")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
     return fig, focal_point
-
-
 
 @SaveOutput("task12")
 def task12():
@@ -191,6 +189,14 @@ def task12():
     elements = [sr, op]
     bundle.propagate_bundle(elements)
     plot = bundle.track_plot()
+    if plot.axes:
+        ax = plot.axes[0]
+        ax.set_title("Task 12: Ray bundle paths through a spherical refractor",
+                     fontsize=13, fontweight="bold", pad=10)
+        ax.set_xlabel("z position / mm")
+        ax.set_ylabel("transverse position / mm")
+        ax.grid(True, alpha=0.35)
+    plot.tight_layout()
     return plot
 
 
@@ -223,6 +229,15 @@ def task13():
     bundle.propagate_bundle(elements)
     plot = bundle.spot_plot()
     rms = bundle.rms()
+    if plot.axes:
+        ax = plot.axes[0]
+        ax.set_title(f"Task 13: Spot diagram at focal plane (RMS = {rms:.4g} mm)",
+                     fontsize=13, fontweight="bold", pad=10)
+        ax.set_xlabel("x position / mm")
+        ax.set_ylabel("y position / mm")
+        ax.grid(True, alpha=0.35)
+        ax.set_aspect("equal", adjustable="box")
+    plot.tight_layout()
     return plot, rms
 
     
@@ -267,18 +282,24 @@ def task14():
         diffraction_scale = scale(wavelength, focal_length, radius)
         diffraction_scale_list.append(diffraction_scale)
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot()
-    ax1.plot(radii, rms_list, label="RMS spot size")
-    ax1.grid(True)
-    ax1.set_xlabel("Bundle Radius (mm)")
-    ax1.set_ylabel("RMS Spread of Bundle Spot (mm)")
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.set_title("Task 14: RMS spot size and diffraction scale vs beam radius",
+                  fontsize=13, fontweight="bold", pad=10)
+    rms_line = ax1.plot(radii, rms_list, linewidth=2, label="RMS spot size")
+    ax1.grid(True, alpha=0.35)
+    ax1.set_xlabel("Input beam radius / mm")
+    ax1.set_ylabel("RMS spot size / mm")
+
     ax2 = ax1.twinx()
-    ax2.plot(radii, diffraction_scale_list, color = "red", label="Diffraction scale")
-    ax2.set_ylabel("Diffraction Scale (mm)")
+    diffraction_line = ax2.plot(radii, diffraction_scale_list, color="red",
+                                linewidth=2, linestyle="--",
+                                label="Diffraction scale")
+    ax2.set_ylabel("Diffraction scale / mm")
 
-    fig.legend()
-
+    lines = rms_line + diffraction_line
+    labels = [line.get_label() for line in lines]
+    ax1.legend(lines, labels, loc="best", fontsize=9)
+    fig.tight_layout()
     bundle = RayBundle(2.5, 5, 6)
     bundle.propagate_bundle(elements)
     return fig, bundle.rms(), scale(wavelength, focal_length, 2.5)
@@ -288,7 +309,6 @@ def task14():
 def task15():
     """
     Task 15.
-
     In this function you will create plano-convex lenses in each orientation and propagate a RayBundle
     through each to their respective focal point. You should then plot the spot plot for each orientation.
     This function should return the following items as a tuple in the following order:
@@ -296,7 +316,6 @@ def task15():
     2. the focal point for the plano-convex lens
     3. the matplotlib figure object for the spot plot for the convex-plano system
     4  the focal point for the convex-plano lens
-
 
     Returns:
         tuple[Figure, float, Figure, float]: the spot plots and rms for plano-convex and convex-plano.
@@ -309,20 +328,29 @@ def task15():
         bundle = RayBundle()
         bundle.propagate_bundle([lens, op])
         plot = bundle.spot_plot()
+        if plot.axes:
+            ax = plot.axes[0]
+            if curvatures < 0:
+                title = "Task 15a: Plano-convex lens spot diagram"
+            else:
+                title = "Task 15b: Convex-plano lens spot diagram"
+            ax.set_title(title, fontsize=13, fontweight="bold", pad=10)
+            ax.set_xlabel("x position / mm")
+            ax.set_ylabel("y position / mm")
+            ax.grid(True, alpha=0.35)
+            ax.set_aspect("equal", adjustable="box")
+        plot.tight_layout()
         return plot, focal_point
 
     pc_plot, pc_focal_point = run_lens(-0.02)
     cp_plot, cp_focal_point = run_lens(0.02)
-
     return (pc_plot, pc_focal_point, cp_plot, cp_focal_point)
-
 
 
 @SaveOutput("task16", plot_output_indices=itemgetter(0))
 def task16():
     """
     Task 16.
-
     In this function you will be again plotting the radial dependence of the RMS and diffraction values
     for each orientation of your lens.
     This function should return the following items as a tuple in the following order:
@@ -375,23 +403,33 @@ def task16():
         bundle = RayBundle(3.5, 5, 6)
         bundle.propagate_bundle(elements)
         rms_35mm_list.append(bundle.rms())
-        print(bundle.rms())
         diffraction_scale_35mm_list.append(scale(wavelength, focal_length, 3.5))
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot()
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.set_title("Task 16: Lens orientation comparison: RMS and diffraction scale",
+                  fontsize=13, fontweight="bold", pad=10)
 
-    ax1.plot(radii, big_rms_list[1], label="P-C RMS")
-    ax1.plot(radii, big_rms_list[0], label="C-P RMS")
-    ax1.grid(True)
-    ax1.set_xlabel("Bundle Radius (mm)")
-    ax1.set_ylabel("RMS Spread of Bundle Spot (mm)")
+    pc_rms_line = ax1.plot(radii, big_rms_list[1], linewidth=2,
+                           label="Plano-convex RMS")
+    cp_rms_line = ax1.plot(radii, big_rms_list[0], linewidth=2,
+                           label="Convex-plano RMS")
+    ax1.grid(True, alpha=0.35)
+    ax1.set_xlabel("Input beam radius / mm")
+    ax1.set_ylabel("RMS spot size / mm")
 
     ax2 = ax1.twinx()
-    ax2.plot(radii, big_diffraction_scale_list[1], color = "red", label = "P-C diffraction scale")
-    ax2.plot(radii, big_diffraction_scale_list[0], color = "green", label ="C-P diffraction scale",)
-    ax2.set_ylabel("Diffraction Scale (mm)")
-    fig.legend()
+    pc_diffraction_line = ax2.plot(radii, big_diffraction_scale_list[1],
+                                   color="red", linewidth=2, linestyle="--",
+                                   label="Plano-convex diffraction scale")
+    cp_diffraction_line = ax2.plot(radii, big_diffraction_scale_list[0],
+                                   color="green", linewidth=2, linestyle=":",
+                                   label="Convex-plano diffraction scale")
+    ax2.set_ylabel("Diffraction scale / mm")
+
+    lines = pc_rms_line + cp_rms_line + pc_diffraction_line + cp_diffraction_line
+    labels = [line.get_label() for line in lines]
+    ax1.legend(lines, labels, loc="best", fontsize=8)
+    fig.tight_layout()
 
     return (fig, rms_35mm_list[0], rms_35mm_list[1], diffraction_scale_35mm_list[0])
 
@@ -401,7 +439,6 @@ def task16():
 def task17():
     """
     Task 17.
-
     In this function you will be first plotting the spot plot for your PlanoConvex lens with the curved
     side first (at the focal point). You will then be optimising the curvatures of a BiConvex lens
     in order to minimise the RMS spot size at the same focal point. This function should return
@@ -416,7 +453,6 @@ def task17():
 
     pc_lens = PlanoConvex(curvature = 0.02)
     pc_focal_point = pc_lens.focal_point()
-    print(pc_focal_point)
     pc_op = OutputPlane(pc_focal_point)
     pc_bundle = RayBundle()
     pc_bundle.propagate_bundle([pc_lens, pc_op])
@@ -444,6 +480,20 @@ def task17():
     bc_rms = bc_bundle.rms()
     fig = pc_bundle.spot_plot()
     fig = bc_bundle.spot_plot(fig=fig)
+    if fig.axes:
+        ax = fig.axes[0]
+        ax.set_title("Task 17: Spot comparison at the plano-convex focal plane",
+                     fontsize=13, fontweight="bold", pad=10)
+        ax.set_xlabel("x position / mm")
+        ax.set_ylabel("y position / mm")
+        ax.grid(True, alpha=0.35)
+        ax.set_aspect("equal", adjustable="box")
+        handles = ax.collections + ax.lines
+        if len(handles) >= 2:
+            handles[-2].set_label("Plano-convex")
+            handles[-1].set_label("Optimised biconvex")
+            ax.legend(fontsize=8)
+    fig.tight_layout()
     return fig, pc_rms, bc_rms
 
 
@@ -451,7 +501,6 @@ def task17():
 def task18():
     """
     Task 18.
-
     In this function you will be testing your reflection modelling. Create a new SphericalReflecting surface
     and trace a RayBundle through it to the OutputPlane.This function should return
     the following items as a tuple in the following order:
@@ -469,7 +518,14 @@ def task18():
     elements = [mirror, op]
     bundle.propagate_bundle(elements)
     fig = bundle.track_plot()
-
+    if fig.axes:
+        ax = fig.axes[0]
+        ax.set_title("Task 18: Ray bundle reflection from a spherical mirror",
+                     fontsize=13, fontweight="bold", pad=10)
+        ax.set_xlabel("z position / mm")
+        ax.set_ylabel("transverse position / mm")
+        ax.grid(True, alpha=0.35)
+    fig.tight_layout()
     return fig, focal_point
 
 
@@ -477,7 +533,6 @@ def task18():
 def task19():
     """
     Task 19.
-
     In this function you will be quantifing the amount of spherical aberration.
     Create a new ConvexPlano lens and trace a RayBundle through it to the OutputPlane
     located at the focal point.
@@ -500,13 +555,14 @@ def task19():
         bundle.propagate_bundle([lens, op])
         rms_values.append(bundle.rms())
 
-    fig1 = plt.figure()
-    plt.plot(radii, rms_values)
-    plt.grid(True)
-    plt.xlabel("Bundle radius (mm)")
-    plt.ylabel("RMS spot size at paraxial focal plane (mm)")
-    plt.title("Transverse spherical aberration")
-
+    fig1, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.plot(radii, rms_values, linewidth=2)
+    ax1.grid(True, alpha=0.35)
+    ax1.set_xlabel("Input beam radius / mm")
+    ax1.set_ylabel("RMS spot size at paraxial focal plane / mm")
+    ax1.set_title("Task 19a: Transverse spherical aberration",
+                  fontsize=13, fontweight="bold", pad=10)
+    fig1.tight_layout()
     ray_heights = np.linspace(0.1, 20, 100)
     z_intercepts = []
 
@@ -519,12 +575,14 @@ def task19():
             z_intercept = np.nan
         z_intercepts.append(z_intercept)
 
-    fig2 = plt.figure()
-    plt.plot(ray_heights, z_intercepts)
-    plt.grid(True)
-    plt.xlabel("distance from optical axis (mm)")
-    plt.ylabel("z intercept with optical axis (mm)")
-
+    fig2, ax2 = plt.subplots(figsize=(8, 5))
+    ax2.plot(ray_heights, z_intercepts, linewidth=2)
+    ax2.grid(True, alpha=0.35)
+    ax2.set_xlabel("Initial ray height from optical axis / mm")
+    ax2.set_ylabel("z-intercept with optical axis / mm")
+    ax2.set_title("Task 19b: Longitudinal spherical aberration",
+                  fontsize=13, fontweight="bold", pad=10)
+    fig2.tight_layout()
     return fig1, fig2
 
 
@@ -532,7 +590,6 @@ def task19():
 def task20():
     """
     Task 20.
-
     In this function you will investigate dispersion. Create several Rays with different wavelengths.
     Plot the paths of these rays through a BiConvex lens made of BK7 glass to an OutputPlane at z=200.
     This function should return the track plot of the path of your Rays through the glass lens.
@@ -556,56 +613,57 @@ def task20():
         op.propagate_ray(ray)
         rays.append(ray)
 
-    fig = plt.figure()
-    plt.xlabel("z position (mm)")
-    plt.ylabel("y position (mm)")
-    plt.title("Dispersion through BK7 biconvex lens")
-    plt.grid(True)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_xlabel("z position / mm")
+    ax.set_ylabel("y position / mm")
+    ax.set_title("Task 20: Chromatic dispersion through a BK7 biconvex lens",
+                 fontsize=13, fontweight="bold", pad=10)
+    ax.grid(True, alpha=0.35)
 
     for ray, colour, wavelength in zip(rays, colours, wavelengths):
         vertices = np.array(ray.vertices())
         z_values = vertices[:, 2]
         y_values = vertices[:, 1]
-        plt.plot(z_values, y_values, color=colour, label=f"{wavelength * 1e6:.1f} nm")
+        ax.plot(z_values, y_values, color=colour, linewidth=2,
+                label=f"{wavelength * 1e6:.1f} nm")
 
-    plt.legend()
+    ax.legend(title="Wavelength", fontsize=9)
+    fig.tight_layout()
     return fig
 
 
 if __name__ == "__main__":
-
     # Run task 8 function
-    # task8()
+    task8()
     # Run task 10 function
-    # FIG10 = task10()
-
+    FIG10 = task10()
 
     #Run task 11 function
-    # FIG11, FOCAL_POINT = task11()
+    FIG11, FOCAL_POINT = task11()
 
     # Run task 12 function
-    # FIG12 = task12()
+    FIG12 = task12()
 
     # Run task 13 function
-    # FIG13, TASK13_RMS = task13()
+    FIG13, TASK13_RMS = task13()
 
     # Run task 14 function
-    # FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
+    FIG14, TASK14_RMS, TASK14_DIFF_SCALE = task14()
 
     # Run task 15 function
-    # FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
+    FIG15_PC, FOCAL_POINT_PC, FIG15_CP, FOCAL_POINT_CP = task15()
 
     # Run task 16 function
-    # FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
+    FIG16, PC_RMS, CP_RMS, TASK16_DIFF_SCALE = task16()
 
     # Run task 17 function
-    #FIG17, CP_RMS, BICONVEX_RMS = task17()
+    FIG17, CP_RMS, BICONVEX_RMS = task17()
 
     # Run task 18 function
-    #FIG18, FOCAL_POINT = task18()
+    FIG18, FOCAL_POINT = task18()
 
     # Run task 19 function
-    #FIG19_TVSA, FIG19_LGSA = task19()
+    FIG19_TVSA, FIG19_LGSA = task19()
 
     # Run task 20 function
     FIG20 = task20()

@@ -1,15 +1,17 @@
-"""Physics module that implements refractions at incidence points"""
+"""Physics functions used by ray tracer"""
 
 import numpy as np
 
 def angle(a, b):
-    """Calculates the angle between two position vectors"""
+    """Returns angle between vectors
+    Details: input must be vector like
+    """
     cos_theta = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
     cos_theta = np.clip(cos_theta, -1.0, 1.0)
     return np.arccos(cos_theta)
 
 def normalize(direc, normal):
-    """Normalization helper"""
+    """Returns normalized direction and normal vectors"""
     direc = np.array(direc, dtype=np.float64)
     normal = np.array(normal, dtype=np.float64)
     direc_hat = direc / np.linalg.norm(direc)
@@ -18,7 +20,12 @@ def normalize(direc, normal):
 
 
 def refract(direc, normal, n_1, n_2):
-    """Calculate the new refracted ray direction"""
+    """
+    Returns refracted ray direction
+    Details:
+    - Uses tangent normal basis
+    - Returns None for total internal reflection
+    """
     direc_hat, normal_hat = normalize(direc, normal)
     n_ratio = n_1 / n_2
     theta_i = angle(direc, -normal_hat)
@@ -46,28 +53,37 @@ def refract(direc, normal, n_1, n_2):
     return new_direc_r
 
 def reflect(direc, normal):
-    """Reflection function"""
+    """Returns reflected ray direction"""
     direc_hat, normal_hat = normalize(direc, normal)
     new_direc_refl = direc_hat - (2 * (np.dot(direc_hat, normal_hat) * normal_hat))
     return new_direc_refl / np.linalg.norm(new_direc_refl)
 
 class DispersiveMaterial():
-    """Creates dispersive material"""
+    """Material with Sellmeier dispersion"""
     def __init__ (self, b_coeff = (1., 2., 3.), c_coeff = (4., 5., 6.)):
-        """Initialises the material with coefficients"""
+        """Initializes material with Sellmeier coefficients"""
         self.__b_coeff = b_coeff
         self.__c_coeff = c_coeff
 
     def b_coeff(self):
-        """Returns the b coefficient"""
+        """
+        Returns b coefficients
+        Details: These are dimensionless
+        """
         return self.__b_coeff
 
     def c_coeff(self):
-        """Retruns the c coefficient"""
+        """
+        Returns c coefficients
+        Details: These are in mm squared
+        """
         return self.__c_coeff
 
     def ref_index(self, wavelength):
-        """Return the refractive index for a given wavelength."""
+        """
+        Returns refractive index for wavelength
+        Details: wavelength must be in mm
+        """
         wavelength_squared = wavelength ** 2
         total = 1.0
         for b_coeff, c_coeff in zip(self.b_coeff(), self.c_coeff()):

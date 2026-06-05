@@ -1,8 +1,8 @@
-"""Genrate cocentric points"""
+"""Generate concentric points"""
 import numpy as np
 
 def rtrings(rmax, nrings, multi):
-    """Generate concentric rings of points in Cartesian coordinates."""
+    """Returns points on concentric rings"""
     yield [0, 0, 0]
     for i in range(1, nrings + 1):
         radius = (rmax / nrings) * i

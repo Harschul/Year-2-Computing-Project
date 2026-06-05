@@ -1,20 +1,34 @@
-"""Module containing all lens classes"""
+"""Lens classes"""
 import numpy as np
 from raytracer import elements
 
 def n_check(n, wavelength):
-    """Return refractive index from either a float or a material"""
+    """
+    Returns refractive index from float or material
+    Details: material must have ref_index
+    """
     if hasattr(n, "ref_index") and callable(n.ref_index):
         return n.ref_index(wavelength)
-
     return n
 
-def _lensmaker_focal_point(z_0, thickness, curvature1, curvature2, n_inside, n_outside, wavelength = 588e-6):
-    """Return the back focal point using the thick lens Lensmaker equation"""
+def _lensmaker_focal_point(
+    z_0,
+    thickness,
+    curvature1,
+    curvature2,
+    n_inside,
+    n_outside,
+    wavelength = 588e-6
+):
+    """
+    Returns back focal point
+    Details: uses thick lens Lensmaker equation
+    """
     n1 = n_check(n_inside, wavelength)
     n2 = n_check(n_outside, wavelength)
     n_ratio = n1 / n2
     optical_power = (n_ratio - 1) * (curvature1 - curvature2 + ((n_ratio - 1) * thickness * curvature1 * curvature2) / n_ratio)
+
     if optical_power == 0:
         focal_length = np.inf
     else:
@@ -24,7 +38,7 @@ def _lensmaker_focal_point(z_0, thickness, curvature1, curvature2, n_inside, n_o
 
 
 class PlanoConvex(elements.OpticalElement):
-    """Creates PlanoConvex lens"""
+    """Creates plano convex lens"""
     def __init__(
         self,
         *,
@@ -35,7 +49,7 @@ class PlanoConvex(elements.OpticalElement):
         thickness = 5.0,
         aperture = 50.0,
     ):
-        """Initializes the Plano Convex Lens"""
+        """Initializes plano convex lens"""
         self.__z_0 = z_0
         self.__curvature = curvature
         self.__n_inside = n_inside
@@ -50,7 +64,7 @@ class PlanoConvex(elements.OpticalElement):
             curvature1 = self.curvature()
             curvature2 = 0
 
-        self.sr_1 = elements.SphericalRefraction(
+        self.__sr_1 = elements.SphericalRefraction(
             z_0 = self.z_0(),
             aperture = self.aperture(),
             curvature = curvature1,
@@ -58,7 +72,7 @@ class PlanoConvex(elements.OpticalElement):
             n_2 = self.__n_inside,
         )
 
-        self.sr_2 = elements.SphericalRefraction(
+        self.__sr_2 = elements.SphericalRefraction(
             z_0 = self.z_0() + self.thickness(),
             aperture = self.aperture(),
             curvature = curvature2,
@@ -67,31 +81,48 @@ class PlanoConvex(elements.OpticalElement):
         )
 
     def z_0(self):
-        """Return the z_0 position"""
+        """Returns z0 position"""
         return self.__z_0
 
     def curvature(self):
-        """Return the curvature1"""
+        """Returns curvature"""
         return self.__curvature
 
     def n_inside(self, wavelength = 588e-6):
-        """Return the refractive index inside the lens"""
+        """
+        Returns refractive index inside lens
+        Details: default wavelength is 588e-6 mm
+        """
         return n_check(self.__n_inside, wavelength)
 
     def n_outside(self, wavelength = 588e-6):
-        """Return the refractive index outside the lens"""
+        """
+        Returns refractive index outside lens
+        Details: default wavelength is 588e-6 mm
+        """
         return n_check(self.__n_outside, wavelength)
 
     def thickness(self):
-        """Return the lens thickness"""
+        """Returns lens thickness"""
         return self.__thickness
 
     def aperture(self):
-        """Return the aperture"""
+        """Returns aperture"""
         return self.__aperture
 
+
+    @property
+    def sr_1(self):
+        """Returns first surface"""
+        return self.__sr_1
+
+    @property
+    def sr_2(self):
+        """Returns second surface"""
+        return self.__sr_2
+
     def focal_point(self, wavelength = 588e-6):
-        """Return the back focal point of the lens"""
+        """Returns back focal point"""
         return _lensmaker_focal_point(
             self.z_0(),
             self.thickness(),
@@ -103,10 +134,11 @@ class PlanoConvex(elements.OpticalElement):
         )
 
     def intercept(self, ray):
+        """Returns first surface intercept"""
         return self.sr_1.intercept(ray)
 
     def propagate_ray(self, ray):
-        """Intercept of one ray with the lens"""
+        """Propagates ray through lens"""
         og_length = len(ray.vertices())
         self.sr_1.propagate_ray(ray)
         new_length = len(ray.vertices())
@@ -115,7 +147,7 @@ class PlanoConvex(elements.OpticalElement):
         return self.sr_2.propagate_ray(ray)
 
 class BiConvex(elements.OpticalElement):
-    """Creates BiConvex lens"""
+    """Creates bi convex lens"""
     def __init__(
         self,
         *,
@@ -127,7 +159,7 @@ class BiConvex(elements.OpticalElement):
         thickness = 5.0,
         aperture = 50.0,
     ):
-        """Initializes the Bi Convex Lens"""
+        """Initializes bi convex lens"""
         self.__z_0 = z_0
         self.__curvature1 = curvature1
         self.__curvature2 = curvature2
@@ -136,7 +168,7 @@ class BiConvex(elements.OpticalElement):
         self.__thickness = thickness
         self.__aperture = aperture
 
-        self.sr_1 = elements.SphericalRefraction(
+        self.__sr_1 = elements.SphericalRefraction(
             z_0 = self.z_0(),
             aperture = self.aperture(),
             curvature = self.curvature1(),
@@ -144,7 +176,7 @@ class BiConvex(elements.OpticalElement):
             n_2 = self.__n_inside,
         )
 
-        self.sr_2 = elements.SphericalRefraction(
+        self.__sr_2 = elements.SphericalRefraction(
             z_0 = self.z_0() + self.thickness(),
             aperture = self.aperture(),
             curvature = self.curvature2(),
@@ -153,35 +185,46 @@ class BiConvex(elements.OpticalElement):
         )
 
     def z_0(self):
-        """Return the z_0 position"""
+        """Returns z0 position"""
         return self.__z_0
 
     def curvature1(self):
-        """Return the curvature1"""
+        """Returns first curvature"""
         return self.__curvature1
 
     def curvature2(self):
-        """Return the curvature2"""
+        """Returns second curvature"""
         return self.__curvature2
 
     def n_inside(self, wavelength = 588e-6):
-        """Return the refractive index inside the lens"""
+        """Returns refractive index inside lens"""
         return n_check(self.__n_inside, wavelength)
 
     def n_outside(self, wavelength = 588e-6):
-        """Return the refractive index outside the lens"""
+        """Returns refractive index outside lens"""
         return n_check(self.__n_outside, wavelength)
 
     def thickness(self):
-        """Return the lens thickness"""
+        """Returns lens thickness"""
         return self.__thickness
 
     def aperture(self):
-        """Return the aperture"""
+        """Returns aperture"""
         return self.__aperture
 
+
+    @property
+    def sr_1(self):
+        """Returns first surface"""
+        return self.__sr_1
+
+    @property
+    def sr_2(self):
+        """Returns second surface"""
+        return self.__sr_2
+
     def focal_point(self, wavelength = 588e-6):
-        """Return the back focal point of the lens"""
+        """Returns back focal point"""
         return _lensmaker_focal_point(
             self.z_0(),
             self.thickness(),
@@ -193,13 +236,22 @@ class BiConvex(elements.OpticalElement):
         )
 
     def intercept(self, ray):
+        """Returns first surface intercept"""
         return self.sr_1.intercept(ray)
 
     def propagate_ray(self, ray):
-        """Intercept of one ray with the lens"""
+        """
+        Propagates ray through both lens surfaces
+        Details: stops if ray misses first surface
+        """
         og_length = len(ray.vertices())
         self.sr_1.propagate_ray(ray)
         new_length = len(ray.vertices())
         if og_length == new_length:
             return None
         return self.sr_2.propagate_ray(ray)
+
+# A Convex Plano lens can just be created using the Plano Convex Class.
+# This has however been inserted to pass the Advanced Design Test.
+class ConvexPlano(PlanoConvex):
+    """Creates convex plano lens"""

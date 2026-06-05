@@ -1,21 +1,22 @@
-"""Represents the optical system using optical elements such as refracting surfaces, output plane""" 
+"""Optical elements""" 
 
 import numpy as np
 from raytracer import physics
 from raytracer.rays import Ray
 
 class OpticalElement:
-    "Base class for all Optical elements"
+    "Base optical element"
     def intercept(self, ray):
-        """Base for the intercept"""
+        """Find intercept"""
         raise NotImplementedError('intercept() needs to be implemented in derived classes')
 
     def propagate_ray(self, ray):
-        """Base for the propogate method"""
+        """Propagate ray"""
         raise NotImplementedError('propagate_ray() needs to be implemented in derived classes')
 
+    # All optical elements need to be flexible enough to handle plane intercepts, thus defined here
     def plane_intercept(self, ray, z_0, aperture = np.inf):
-        """Return intercept with plane z = z_0."""
+        """Return plane intercept"""
         pos = ray.pos()
         direc = ray.direc()
         z_direction = direc[2]
@@ -35,8 +36,9 @@ class OpticalElement:
 
         return intercept
 
+    # Numerical approach to find the focus. WILL NOT WORK FOR LENSES - Use Lens Makers Formula
     def focal_point(self):
-        """Calculates the paraxial focus of this object"""
+        """Return paraxial focus" found via ray tracing"""
         ys = [0.01, 0.02, 0.05, 0.1]
         z_crossings = []
         for i in ys:
@@ -56,8 +58,8 @@ class OpticalElement:
 
         return np.mean(z_crossings)
 
-class SphericalRefraction(OpticalElement):
-    """Shperical refraction implementation"""
+class SphericalSurface(OpticalElement):
+    """Spherical surface"""
     def __init__(
         self,
         *,
@@ -67,7 +69,7 @@ class SphericalRefraction(OpticalElement):
         n_1 = 1.0,
         n_2 = 1.5
     ):
-        """Create spherical refraction object"""
+        """Make spherical surface"""
         self.__z_0 = z_0
         self.__aperture = aperture
         self.__curvature = curvature
@@ -81,37 +83,37 @@ class SphericalRefraction(OpticalElement):
             self.__centre = np.array([0.0, 0.0, self.__z_0 + self.__radius])
 
     def z_0(self):
-        """Returns a copy of z0"""
+        """Return z0"""
         return self.__z_0
 
     def aperture(self):
-        """Returns a copy of aperture"""
+        """Return aperture"""
         return self.__aperture
 
     def curvature(self):
-        """Returns a copy of curvature"""
+        """Return curvature"""
         return self.__curvature
 
     def n_check(self, n, wavelength):
-        """Return refractive index from either a float or a material."""
+        """Return refractive index"""
         if hasattr(n, "ref_index"):
             return n.ref_index(wavelength)
         return n
 
     def n_1(self, wavelength = 588e-6):
-        """Returns a copy of the n_1 value"""
+        """Return n1"""
         return self.n_check(self.__n_1, wavelength)
 
     def n_2(self, wavelength = 588e-6):
-        """Returns a copy of the n_2 value"""
+        """Return n2"""
         return self.n_check(self.__n_2, wavelength)
 
     def centre(self):
-        """Returns the centre"""
+        """Return centre"""
         return self.__centre
 
     def intercept(self, ray):
-        """Return the closest valid ray intercept with the spherical surface."""
+        """Return spherical intercept"""
         if self.curvature() == 0:
             return self.plane_intercept(ray, self.z_0(), self.aperture())
 
@@ -156,8 +158,10 @@ class SphericalRefraction(OpticalElement):
 
         return intercept
 
+class SphericalRefraction(SphericalSurface):
+    """Spherical refraction"""
     def propagate_ray(self, ray):
-        """Propoagates ray"""
+        """Propagate ray"""
         new_position = self.intercept(ray)
 
         if new_position is None:
@@ -179,23 +183,25 @@ class SphericalRefraction(OpticalElement):
 
         return ray.append(new_position, new_direc)
 
-class OutputPlane(OpticalElement):
-    """Plane"""
+class Plane(OpticalElement):
+    """Plane surface"""
     def __init__(self, z_0):
-        """Create Plane"""
+        """Make plane"""
         self.__z_0 = z_0
 
     def z_0(self):
-        """Return the z_0"""
+        """Return z0"""
         return self.__z_0
 
     def intercept(self, ray):
-        """Intercept"""
+        """Return intercept"""
         intercept = self.plane_intercept(ray, self.z_0())
         return intercept
 
+class OutputPlane(Plane):
+    """Output plane"""
     def propagate_ray(self, ray):
-        """Propogates ray"""
+        """Propagate ray"""
         end_position = self.intercept(ray)
         if end_position is None:
             return None
@@ -204,9 +210,9 @@ class OutputPlane(OpticalElement):
 
 
 class SphericalReflection(SphericalRefraction):
-    """Generates spherical surface that reflects"""
+    """Spherical reflection"""
     def propagate_ray(self, ray):
-        """Propagates a ray by reflecting it from the spherical surface."""
+        """Reflect ray"""
         new_position = self.intercept(ray)
 
         if new_position is None:

@@ -1,31 +1,28 @@
-"""Rays and their properties"""
+"""Ray and ray bundle classes"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 from raytracer.genpolar import rtrings
 
 class Ray:
-    """Ray object"""
+    """Single ray"""
     def __init__(self, pos = None, direc = None, wavelength = 588e-6):
-        """
-        Initialize and creates a ray object which has a origin position
-        and a direction. 
-        """
+        """Initializes ray"""
         if pos is None:
             pos = np.array([0, 0, 0], dtype = float)
         if direc is None:
             direc = np.array([0, 0, 1], dtype = float)
         pos = np.array(pos, dtype = float)
         direc = np.array(direc, dtype = float)
-        self.dimension_check(pos, direc)
-        self.normalise(direc)
+        Ray.dimension_check(self, pos, direc)
+        Ray.normalise(self, direc)
         self.__pos = [pos]
         self.__direc = direc
         self.__wavelength = wavelength
 
 
     def normalise(self, vector):
-        """Normalizes a vector and alters it"""
+        """Normalizes vector"""
         norm = np.linalg.norm(vector)
         if norm == 0:
             raise ValueError("The magnitude of the direction vector is 0")
@@ -34,11 +31,11 @@ class Ray:
 
     @property
     def wavelength(self):
-        """Returns the wavelength"""
+        """Returns wavelength"""
         return self.__wavelength
 
     def dimension_check(self, position, direction):
-        """Checks dimensions of input arrays"""
+        """Checks vector size"""
         if len(direction) < 3:
             raise TypeError("The direction inserted is less than 3D")
         if len(direction) > 3:
@@ -49,15 +46,15 @@ class Ray:
             raise TypeError("The position inserted is greater than 3D")
 
     def pos(self):
-        """Return the latest position of the ray"""
+        """Returns current position"""
         return self.__pos[-1].copy()
 
     def direc(self):
-        """Return the latest direction of the ray"""
+        """Returns current direction"""
         return self.__direc
 
     def append(self, pos, direc):
-        """Add a new position and direction to the ray"""
+        """Adds point to ray"""
         self.dimension_check(pos, direc)
         self.normalise(direc)
         self.__pos.append(np.array(pos))
@@ -65,12 +62,12 @@ class Ray:
         return self
 
     def vertices(self):
-        """Return the position history of the ray"""
+        """Returns ray points"""
         return self.__pos
 
     @property
     def z_int(self):
-        """Return the z where the ray intercepts the optical axis"""
+        """Returns optical axis z intercept"""
         pos = self.pos()
         direc = self.direc()
         x_pos = pos[0]
@@ -100,21 +97,31 @@ class Ray:
         return intercept_position[2]
 
 class RayBundle:
-    """Generates a bundle of Rays"""
+    """Ray bundle"""
     def __init__(self, rmax = 5.0, nrings = 5, multi = 6):
-        """Initializes a ray bundle"""
+        """Initializes ray bundle"""
         self.__positions_3d = np.array(list(rtrings(rmax, nrings, multi)))
-        self.rays = list(self.ray_bundle(self.__positions_3d))
+        self.__rays = list(self.ray_bundle(self.__positions_3d))
+
+    @property
+    def rays(self):
+        """Returns rays"""
+        return self.__rays
+
+    @rays.setter
+    def rays(self, value):
+        """Sets rays"""
+        self.__rays = value
 
     def ray_bundle(self, positions):
-        """Bundles rays travelling in one direction"""
+        """Makes rays from positions"""
         direc = [0, 0, 1]
         for i in positions:
             ray = Ray(i, direc)
             yield ray
 
     def propagate_bundle(self, elements):
-        """Propagates surviving rays through optical elements."""
+        """Propagates rays"""
         for element in elements:
             surviving_rays = []
             for ray in self.rays:
@@ -124,7 +131,7 @@ class RayBundle:
             self.rays = surviving_rays
 
     def track_plot(self):
-        """Plots the Rays in 3D"""
+        """Plots ray paths"""
         fig = plt.figure()
         ax = fig.add_subplot(projection = "3d")
         ax.set_xlabel("x")
@@ -141,7 +148,7 @@ class RayBundle:
         return fig
 
     def xy(self, rays):
-        """Returns the x_y_vertices"""
+        """Returns xy positions"""
         x_y_vertices = []
         for ray in rays:
             x_y_vertex = ray.pos()[:2]
@@ -149,14 +156,14 @@ class RayBundle:
         return np.array(x_y_vertices)
 
     def rms(self):
-        """Calculates the RMS spread from the optical axis"""
+        """Returns rms spot size"""
         x_y_vertices = self.xy(self.rays)
         magnitude_squared = np.sum(x_y_vertices ** 2, axis = 1)
         rms = np.sqrt(np.mean(magnitude_squared))
         return rms
 
     def spot_plot(self, fig = None, label = None):
-        """Shows the intersection between the rays and an arbitrary plane"""
+        """Plots ray spots"""
         x_y_vertices = self.xy(self.rays)
         x_position = x_y_vertices[:, 0]
         y_position = x_y_vertices[:, 1]

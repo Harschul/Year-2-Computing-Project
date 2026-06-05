@@ -1,4 +1,4 @@
-"""Decorator utilities."""
+"""Decorator utilities"""
 import pickle
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 
 @dataclass
 class SaveOutput:
-    """save analysis output for marking."""
+    """Saves analysis output for marking"""
     plot_names: str | list[str]
     plot_output_indices: Callable[[Any], Any | Iterable[Any]] = field(default=lambda x: x, kw_only=True)
     plots_dir: Path = field(default=Path(__file__).parent.parent.parent / "plots_for_marking", kw_only=True)
