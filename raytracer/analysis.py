@@ -193,8 +193,6 @@ def task12():
         ax = plot.axes[0]
         ax.set_title("Task 12: Ray bundle paths through a spherical refractor",
                      fontsize=13, fontweight="bold", pad=10)
-        ax.set_xlabel("z position / mm")
-        ax.set_ylabel("transverse position / mm")
         ax.grid(True, alpha=0.35)
     plot.tight_layout()
     return plot
@@ -522,8 +520,6 @@ def task18():
         ax = fig.axes[0]
         ax.set_title("Task 18: Ray bundle reflection from a spherical mirror",
                      fontsize=13, fontweight="bold", pad=10)
-        ax.set_xlabel("z position / mm")
-        ax.set_ylabel("transverse position / mm")
         ax.grid(True, alpha=0.35)
     fig.tight_layout()
     return fig, focal_point
