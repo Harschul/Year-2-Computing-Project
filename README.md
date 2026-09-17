@@ -93,6 +93,3 @@ Run the test suite from the project root with:
 pytest
 ```
 
-## License
-
-This project is licensed under the **GNU General Public License v3.0**. See `LICENSE` for details.
